@@ -1,0 +1,82 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.github.rodm:gradle-teamcity-plugin:1.0"
+    }
+}
+
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.5.10'
+    id 'java'
+}
+
+group 'jetbrains.buildServer.clouds.lambda'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext.teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2022.1-SNAPSHOT'
+ext.teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
+ext.teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
+ext.teamcityJavaHome = System.properties['java.home']
+ext.kotlin_version = '1.6.10'
+
+apply plugin: 'idea'
+idea {
+    project {
+        vcs = 'Git'
+    }
+}
+
+subprojects {
+    group = 'jetbrains.buildServer.codedeploy'
+}
+
+configure(subprojects) {
+    apply plugin: 'java'
+    apply plugin: 'kotlin'
+
+
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+    test {
+        useTestNG()
+        testLogging.showStandardStreams = true
+    }
+
+    repositories {
+        mavenCentral()
+        maven {
+            url = 'https://repository.jetbrains.com/all'
+        }
+    }
+
+    dependencies {
+        implementation "org.jetbrains.kotlin:kotlin-stdlib"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    }
+
+
+    compileKotlin {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+    compileTestKotlin {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+}
