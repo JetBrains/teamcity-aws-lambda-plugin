@@ -1,4 +1,6 @@
 dependencies {
+    compile project(':aws-lambda-common')
+
     compile 'com.amazonaws:aws-lambda-java-core:1.2.1'
     compile 'com.amazonaws:aws-lambda-java-events:3.11.0'
 }
