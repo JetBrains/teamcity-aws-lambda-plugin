@@ -1,12 +1,13 @@
 package jetbrains.buildServer.runner.lambda
 
-import RunDetails
 import com.amazonaws.services.lambda.AWSLambdaAsync
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.amazonaws.services.lambda.model.InvokeResult
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.agent.*
+import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
+import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 import java.util.concurrent.Future
@@ -75,8 +76,6 @@ class LambdaRunner : AgentBuildRunner {
     }
 
     companion object {
-        private const val RUNNER_TYPE = "aws.lambda"
-        private const val FUNCTION_NAME = "TeamcityLambdaRunner"
 
     }
 }

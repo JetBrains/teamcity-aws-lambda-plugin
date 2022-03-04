@@ -4,9 +4,9 @@ dependencies {
     compile project(':aws-lambda-common')
 
     testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
-    implementation 'com.amazonaws:aws-java-sdk-lambda:1.12.169'
+    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.169'
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
-    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1'
+    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1'
 }
 
 teamcity {
