@@ -8,7 +8,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 import java.io.OutputStream
 
-class TasksRequesthandler : RequestStreamHandler {
+class TasksRequestHandler : RequestStreamHandler {
     private val objectMapper = jacksonObjectMapper()
 
     override fun handleRequest(input: InputStream, output: OutputStream, context: Context) {

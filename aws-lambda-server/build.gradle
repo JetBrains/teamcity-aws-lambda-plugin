@@ -21,6 +21,7 @@ dependencies {
 
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
+    compile 'commons-validator:commons-validator:1.7'
 }
 
 sourceCompatibility = "1.8"

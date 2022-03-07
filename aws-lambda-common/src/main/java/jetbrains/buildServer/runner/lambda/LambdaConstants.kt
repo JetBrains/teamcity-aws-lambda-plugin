@@ -17,6 +17,9 @@ object LambdaConstants {
     const val PASSWORD_SYSTEM_PROPERTY = "system.teamcity.auth.password"
     const val TEAMCITY_SERVER_URL = "teamcity.serverUrl"
     const val TEAMCITY_BUILD_ID = "teamcity.build.id"
-    const val LAMBDA_ENDPOINT_URL = "lambda.endpoint_url"
 
+    const val LAMBDA_SETTINGS_STEP = "lambda_settings_settings"
+    const val LAMBDA_ENDPOINT_URL_PARAM = "lambda.endpoint_url"
+    const val LAMBDA_ENDPOINT_URL_LABEL = "Lambda Service Endpoint URL"
+    const val LAMBDA_ENDPOINT_URL_NOTE = "Should your lambda function be executed through a different service endpoint URL than the default AWS one"
 }

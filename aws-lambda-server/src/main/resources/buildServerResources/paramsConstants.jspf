@@ -13,11 +13,16 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   --%>
-<%@include file="paramsConstants.jspf"%>
 
-<jsp:include page="viewAWSCommonParams.jsp"/>
+<%@ taglib prefix="props" tagdir="/WEB-INF/tags/props" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
+<%@ page import="jetbrains.buildServer.runner.lambda.LambdaConstants" %>
+
+<c:set var="endpoint_url_param" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM%>"/>
+<c:set var="endpoint_url_label" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_LABEL%>"/>
+<c:set var="endpoint_url_note" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_NOTE%>"/>
+<c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
 
 
-<div class="parameter">
-    ${endpoint_url_label}: <props:displayValue name="${endpoint_url_param}" emptyValue="default"/>
-</div>
+

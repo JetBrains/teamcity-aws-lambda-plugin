@@ -1,0 +1,10 @@
+Resources:
+  TeamcityLambdaRunner:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest
+      Runtime: java8.al2
+      PackageType: Zip
+      CodeUri: 'build/libs/aws-lambda-function-all.jar'
+      MemorySize: 512
+      Timeout: 900

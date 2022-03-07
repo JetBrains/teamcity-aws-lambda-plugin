@@ -8,7 +8,7 @@ import com.amazonaws.services.lambda.model.InvokeResult
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
-import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL
+import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM
 import jetbrains.buildServer.runner.lambda.LambdaConstants.PASSWORD_SYSTEM_PROPERTY
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.LambdaConstants.TEAMCITY_BUILD_ID
@@ -53,6 +53,7 @@ class LambdaRunner : AgentBuildRunner {
                 password = context.buildParameters.allParameters.getValue(PASSWORD_SYSTEM_PROPERTY),
                 buildId = context.configParameters.getValue(TEAMCITY_BUILD_ID),
                 teamcityServerUrl = context.configParameters.getValue(TEAMCITY_SERVER_URL)
+                    .replace("localhost", "172.17.0.1")
             )
 
             override fun start() {}
@@ -73,11 +74,22 @@ class LambdaRunner : AgentBuildRunner {
 
             private fun getLambdaClient() =
                 withAWSClients<AWSLambdaAsync, Exception>(context.runnerParameters) { clients ->
-                    AWSLambdaAsyncClientBuilder.standard()
+                    val clientBuilder = AWSLambdaAsyncClientBuilder.standard()
                         .withClientConfiguration(clients.clientConfiguration)
                         .withCredentials(getCredentialsProvider(context.runnerParameters))
-                        .withRegion(clients.region)
-                        .build()
+
+                    if (context.runnerParameters.containsKey(LAMBDA_ENDPOINT_URL_PARAM)) {
+                        clientBuilder.withEndpointConfiguration(
+                            AwsClientBuilder.EndpointConfiguration(
+                                context.runnerParameters[LAMBDA_ENDPOINT_URL_PARAM],
+                                clients.region
+                            )
+                        )
+                    } else {
+                        clientBuilder.withRegion(clients.region)
+                    }
+
+                    clientBuilder.build()
                 }
         }
 

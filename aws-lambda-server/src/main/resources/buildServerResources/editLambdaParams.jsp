@@ -16,7 +16,20 @@
 
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
+<%@include file="paramsConstants.jspf"%>
+
 <jsp:include page="editAWSCommonParams.jsp">
     <jsp:param name="requireRegion" value="${true}"/>
     <jsp:param name="requireEnvironment" value="${false}"/>
 </jsp:include>
+
+
+<l:settingsGroup title="Lambda Settings">
+    <tr data-steps="${lambda_settings_step}">
+        <th><label for="${endpoint_url_param}">${endpoint_url_label}: </label></th>
+        <td><props:textProperty name="${endpoint_url_param}" className="longField" />
+            <span class="smallNote">${endpoint_url_note}</span><span class="error" id="error_${endpoint_url_param}"></span>
+
+        </td>
+    </tr>
+</l:settingsGroup>

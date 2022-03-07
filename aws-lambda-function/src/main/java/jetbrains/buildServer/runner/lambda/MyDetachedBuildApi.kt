@@ -27,7 +27,7 @@ class MyDetachedBuildApi(private val runDetails: RunDetails, context: Context) :
         install(Auth) {
             basic {
                 sendWithoutRequest {
-                    it.url.build().toString() == runDetails.teamcityServerUrl
+                    it.url.build().toString().startsWith(runDetails.teamcityServerUrl)
                 }
 
                 credentials {
@@ -38,7 +38,7 @@ class MyDetachedBuildApi(private val runDetails: RunDetails, context: Context) :
         }
     }
     private val teamcityBuildRestApi =
-        "http://${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
+        "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
 
     override fun log(serviceMessage: String) {
         CoroutineScope(Dispatchers.IO).launch {
