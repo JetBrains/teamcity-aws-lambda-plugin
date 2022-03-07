@@ -1,5 +1,6 @@
 package jetbrains.buildServer.runner.lambda
 
+import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.lambda.AWSLambdaAsync
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
 import com.amazonaws.services.lambda.model.InvokeRequest
@@ -7,7 +8,12 @@ import com.amazonaws.services.lambda.model.InvokeResult
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
+import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL
+import jetbrains.buildServer.runner.lambda.LambdaConstants.PASSWORD_SYSTEM_PROPERTY
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
+import jetbrains.buildServer.runner.lambda.LambdaConstants.TEAMCITY_BUILD_ID
+import jetbrains.buildServer.runner.lambda.LambdaConstants.TEAMCITY_SERVER_URL
+import jetbrains.buildServer.runner.lambda.LambdaConstants.USERNAME_SYSTEM_PROPERTY
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 import java.util.concurrent.Future
@@ -27,20 +33,27 @@ class LambdaRunner : AgentBuildRunner {
 
 
             fun executeTask(): BuildFinishedStatus {
-                val runDetails = RunDetails(context.runnerParameters)
+                val runDetails = getRunDetails()
 
                 val invokeRequest = InvokeRequest()
                     .withFunctionName(FUNCTION_NAME)
                     .withPayload(objectMapper.writeValueAsString(runDetails))
 
                 if (isInterrupted) {
-                    invokeResultFuture = awsLambda.invokeAsync(invokeRequest)
                     return BuildFinishedStatus.INTERRUPTED
                 }
 
+                invokeResultFuture = awsLambda.invokeAsync(invokeRequest)
                 myIsFinished.set(true)
                 return BuildFinishedStatus.FINISHED_DETACHED
             }
+
+            private fun getRunDetails(): RunDetails = RunDetails(
+                username = context.buildParameters.allParameters.getValue(USERNAME_SYSTEM_PROPERTY),
+                password = context.buildParameters.allParameters.getValue(PASSWORD_SYSTEM_PROPERTY),
+                buildId = context.configParameters.getValue(TEAMCITY_BUILD_ID),
+                teamcityServerUrl = context.configParameters.getValue(TEAMCITY_SERVER_URL)
+            )
 
             override fun start() {}
 

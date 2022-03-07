@@ -1,5 +1,8 @@
 package jetbrains.buildServer.runner.lambda
 
 data class RunDetails(
-    val runnerParameters: Map<String,  String>
+    val username: String,
+    val password: String,
+    val buildId: String,
+    val teamcityServerUrl: String
 )

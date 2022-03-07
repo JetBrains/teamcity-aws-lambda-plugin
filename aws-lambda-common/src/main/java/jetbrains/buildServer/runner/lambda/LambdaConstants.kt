@@ -12,4 +12,11 @@ object LambdaConstants {
     const val VIEW_PARAMS_JSP = "viewLambdaParams.jsp"
     const val VIEW_PARAMS_HTML = "viewLambdaParams.html"
 
+
+    const val USERNAME_SYSTEM_PROPERTY = "system.teamcity.auth.userId"
+    const val PASSWORD_SYSTEM_PROPERTY = "system.teamcity.auth.password"
+    const val TEAMCITY_SERVER_URL = "teamcity.serverUrl"
+    const val TEAMCITY_BUILD_ID = "teamcity.build.id"
+    const val LAMBDA_ENDPOINT_URL = "lambda.endpoint_url"
+
 }

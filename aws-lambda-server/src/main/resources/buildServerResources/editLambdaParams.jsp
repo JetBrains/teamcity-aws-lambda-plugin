@@ -16,6 +16,7 @@
 
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
-<jsp:include page="editAWSCommonParams.jsp"/>
-
-
+<jsp:include page="editAWSCommonParams.jsp">
+    <jsp:param name="requireRegion" value="${true}"/>
+    <jsp:param name="requireEnvironment" value="${false}"/>
+</jsp:include>
