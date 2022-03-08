@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.ktor.client.engine.cio.*
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 import java.io.OutputStream
@@ -16,7 +17,7 @@ class TasksRequestHandler : RequestStreamHandler {
 
         Thread.sleep(5000)
 
-        val detachedBuildApi = MyDetachedBuildApi(runDetails, context)
+        val detachedBuildApi = MyDetachedBuildApi(runDetails, context, CIO.create())
 
         runBlocking {
             detachedBuildApi.finishBuild()

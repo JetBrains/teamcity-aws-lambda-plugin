@@ -2,21 +2,22 @@ package jetbrains.buildServer.runner.lambda
 
 import com.amazonaws.services.lambda.runtime.Context
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.*
 import io.ktor.client.features.auth.*
 import io.ktor.client.features.auth.providers.*
 import io.ktor.client.features.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class MyDetachedBuildApi(private val runDetails: RunDetails, context: Context) :
+class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpClientEngine) :
     DetachedBuildApi {
 
-    private val client: HttpClient = HttpClient(CIO) {
+    private val client = HttpClient(engine) {
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
@@ -37,19 +38,16 @@ class MyDetachedBuildApi(private val runDetails: RunDetails, context: Context) :
 
         }
     }
+
     private val teamcityBuildRestApi =
         "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
 
-    override fun log(serviceMessage: String) {
+    override fun log(serviceMessage: String) =
         CoroutineScope(Dispatchers.IO).launch {
             client.post<Any>("$teamcityBuildRestApi/log") {
-                headers {
-                    contentType(ContentType.Text.Plain)
-                }
-                body = serviceMessage
+                body = TextContent(serviceMessage, ContentType.Text.Plain)
             }
         }
-    }
 
 
     override suspend fun finishBuild() {
