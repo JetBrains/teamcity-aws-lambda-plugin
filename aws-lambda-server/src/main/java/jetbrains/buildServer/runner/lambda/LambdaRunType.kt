@@ -2,7 +2,7 @@ package jetbrains.buildServer.runner.lambda
 
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_HTML
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_JSP
-import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_LABEL
+import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_ERROR
 import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DESCR
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DISPLAY_NAME
@@ -49,8 +49,8 @@ class LambdaRunType(
         invalids.putAll(AWSCommonParams.validate(properties, false))
 
         val endpointUrl = properties[LAMBDA_ENDPOINT_URL_PARAM]
-        if (StringUtil.isNotEmpty(endpointUrl) && !UrlValidator().isValid(endpointUrl)){
-            invalids[LAMBDA_ENDPOINT_URL_PARAM] = "$LAMBDA_ENDPOINT_URL_LABEL does not contain a valid URL"
+        if (StringUtil.isNotEmpty(endpointUrl) && !UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(endpointUrl)){
+            invalids[LAMBDA_ENDPOINT_URL_PARAM] = LAMBDA_ENDPOINT_URL_ERROR
         }
 
         CollectionsUtil.convertCollection(invalids.entries) { source ->

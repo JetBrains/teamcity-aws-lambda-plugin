@@ -7,7 +7,6 @@ dependencies {
     compile 'com.amazonaws:aws-java-sdk-lambda:1.12.169'
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1'
-    testCompile 'org.jmock:jmock:2.12.0'
 }
 
 teamcity {

@@ -68,6 +68,7 @@ configure(subprojects) {
     dependencies {
         implementation "org.jetbrains.kotlin:kotlin-stdlib"
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+        testCompile 'org.jmock:jmock:2.12.0'
     }
 
 

@@ -22,4 +22,5 @@ object LambdaConstants {
     const val LAMBDA_ENDPOINT_URL_PARAM = "lambda.endpoint_url"
     const val LAMBDA_ENDPOINT_URL_LABEL = "Lambda Service Endpoint URL"
     const val LAMBDA_ENDPOINT_URL_NOTE = "Should your lambda function be executed through a different service endpoint URL than the default AWS one"
+    const val LAMBDA_ENDPOINT_URL_ERROR = "$LAMBDA_ENDPOINT_URL_LABEL does not contain a valid URL"
 }
