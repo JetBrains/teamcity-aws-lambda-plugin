@@ -31,7 +31,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         m = Mockery()
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl)
+        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, ENV_PARAMS, SCRIPT_CONTENT)
         context = m.mock(Context::class.java)
         logger = m.mock(LambdaLogger::class.java)
 
@@ -67,7 +67,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.log(SERVICE_MESSAGE).join()
+            detachedBuildApi.logAsync(SERVICE_MESSAGE).join()
         }
     }
 
@@ -94,6 +94,9 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         const val BUILD_ID = "buildId"
         const val USERNAME = "username"
         const val PASSWORD = "password"
+        val ENV_PARAMS = emptyMap<String, String>()
+        const val SCRIPT_CONTENT = "scriptContent"
+
 
         const val SERVICE_MESSAGE = "serviceMessage"
     }

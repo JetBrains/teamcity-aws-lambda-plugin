@@ -11,7 +11,7 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 
 
 class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpClientEngine) :
@@ -42,10 +42,12 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
     private val teamcityBuildRestApi =
         "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
 
-    override fun log(serviceMessage: String) =
-        CoroutineScope(Dispatchers.IO).launch {
-            client.post<Any>("$teamcityBuildRestApi/log") {
-                body = TextContent(serviceMessage, ContentType.Text.Plain)
+    override fun logAsync(serviceMessage: String?) =
+        CoroutineScope(Dispatchers.IO).async {
+            serviceMessage?.let {
+                client.post<Any>("$teamcityBuildRestApi/log") {
+                    body = TextContent(serviceMessage, ContentType.Text.Plain)
+                }
             }
         }
 

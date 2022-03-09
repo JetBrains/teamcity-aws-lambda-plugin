@@ -1,9 +1,9 @@
 package jetbrains.buildServer.runner.lambda
 
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.Deferred
 
 interface DetachedBuildApi {
-    fun log(serviceMessage: String): Job
+    fun logAsync(serviceMessage: String?): Deferred<Any?>
 
     suspend fun finishBuild()
 }
