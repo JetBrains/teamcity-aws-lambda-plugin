@@ -21,3 +21,7 @@
 <div class="parameter">
     ${endpoint_url_label}: <props:displayValue name="${endpoint_url_param}" emptyValue="default"/>
 </div>
+
+<div class="parameter">
+    Custom script: <props:displayValue name="script.content" emptyValue="<empty>" showInPopup="true" popupTitle="Script content" popupLinkText="view script content"/>
+</div>

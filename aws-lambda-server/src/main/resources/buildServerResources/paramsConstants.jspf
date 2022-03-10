@@ -22,6 +22,9 @@
 <c:set var="endpoint_url_param" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM%>"/>
 <c:set var="endpoint_url_label" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_LABEL%>"/>
 <c:set var="endpoint_url_note" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_NOTE%>"/>
+<c:set var="script_content_param" value="<%=LambdaConstants.SCRIPT_CONTENT_PARAM%>"/>
+<c:set var="script_content_label" value="<%=LambdaConstants.SCRIPT_CONTENT_LABEL%>"/>
+<c:set var="script_content_note" value="<%=LambdaConstants.SCRIPT_CONTENT_NOTE%>"/>
 <c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
 
 

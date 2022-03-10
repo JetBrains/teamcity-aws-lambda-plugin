@@ -23,4 +23,9 @@ object LambdaConstants {
     const val LAMBDA_ENDPOINT_URL_LABEL = "Lambda Service Endpoint URL"
     const val LAMBDA_ENDPOINT_URL_NOTE = "Should your lambda function be executed through a different service endpoint URL than the default AWS one"
     const val LAMBDA_ENDPOINT_URL_ERROR = "$LAMBDA_ENDPOINT_URL_LABEL does not contain a valid URL"
+
+    const val SCRIPT_CONTENT_PARAM = "lambda.script.content"
+    const val SCRIPT_CONTENT_LABEL = "Custom Script"
+    const val SCRIPT_CONTENT_NOTE = "A Unix-like script, which will be executed as a shell script in a Unix-like environment."
+    const val SCRIPT_CONTENT_ERROR = "Script content must be specified"
 }

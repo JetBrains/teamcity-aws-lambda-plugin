@@ -19,7 +19,7 @@ apply plugin: 'com.github.rodm.teamcity-server'
 dependencies {
     compile project(':aws-lambda-common')
 
-    compile "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
+    compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     compile 'commons-validator:commons-validator:1.7'
 }

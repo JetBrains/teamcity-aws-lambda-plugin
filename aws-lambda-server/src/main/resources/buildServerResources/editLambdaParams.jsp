@@ -32,4 +32,15 @@
 
         </td>
     </tr>
+
+    <tr id="script.content.container" class="scriptMode customScript" data-steps="${lambda_settings_step}">
+        <th>
+            <label for="${script_content_param}">${script_content_label}:<l:star/></label>
+        </th>
+        <td class="codeHighlightTD">
+            <props:multilineProperty name="${script_content_param}" className="longField" cols="58" rows="10" expanded="true" linkTitle="Enter build script content"
+                                     note="${script_content_note}"
+                                     highlight="shell" />
+        </td>
+    </tr>
 </l:settingsGroup>

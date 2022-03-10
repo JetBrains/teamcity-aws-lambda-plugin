@@ -39,7 +39,9 @@ class LambdaBuildProcess(
         password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
         buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
         teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL)
-            .replace("localhost", "172.17.0.1")
+            .replace("localhost", "172.17.0.1"),
+        envParams = context.buildParameters.environmentVariables,
+        customScript = context.runnerParameters.getValue(LambdaConstants.SCRIPT_CONTENT_PARAM)
     )
 
     override fun start() {}
