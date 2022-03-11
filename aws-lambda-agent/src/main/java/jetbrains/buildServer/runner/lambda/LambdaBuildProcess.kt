@@ -6,12 +6,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.agent.BuildFinishedStatus
 import jetbrains.buildServer.agent.BuildProcess
 import jetbrains.buildServer.agent.BuildRunnerContext
+import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
+import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
     private val context: BuildRunnerContext,
     private val awsLambda: AWSLambdaAsync,
     private val objectMapper: ObjectMapper,
+    private val workingDirectoryTransfer: WorkingDirectoryTransfer,
+    private val unixCommandLinePreparer: CommandLinePreparer
 ) :
     BuildProcess {
 
@@ -19,8 +23,12 @@ class LambdaBuildProcess(
     private val myIsFinished: AtomicBoolean = AtomicBoolean()
 
     private fun executeTask(): BuildFinishedStatus {
-        val runDetails = getRunDetails()
 
+        val projectName = context.buildParameters.systemProperties.getValue(LambdaConstants.TEAMCITY_PROJECT_NAME)
+        val scriptContentFilename = unixCommandLinePreparer.writeBuildScriptContent(projectName, context.workingDirectory)
+        val directoryId = workingDirectoryTransfer.upload(context.workingDirectory)
+
+        val runDetails = getRunDetails(directoryId, scriptContentFilename)
         val invokeRequest = InvokeRequest()
             .withFunctionName(LambdaConstants.FUNCTION_NAME)
             .withPayload(objectMapper.writeValueAsString(runDetails))
@@ -34,14 +42,15 @@ class LambdaBuildProcess(
         return BuildFinishedStatus.FINISHED_DETACHED
     }
 
-    private fun getRunDetails(): RunDetails = RunDetails(
+    private fun getRunDetails(directoryId: String, scriptContentFilename: String): RunDetails = RunDetails(
         username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
         password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
         buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
         teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL)
             .replace("localhost", "172.17.0.1"),
         envParams = context.buildParameters.environmentVariables,
-        customScript = context.runnerParameters.getValue(LambdaConstants.SCRIPT_CONTENT_PARAM)
+        customScriptFilename = scriptContentFilename,
+        directoryId = directoryId
     )
 
     override fun start() {}

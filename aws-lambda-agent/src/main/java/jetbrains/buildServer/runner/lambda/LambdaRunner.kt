@@ -3,16 +3,26 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.lambda.AWSLambdaAsync
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
+import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
+import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
+import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 
 class LambdaRunner : AgentBuildRunner {
     override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess =
-        LambdaBuildProcess(context, getLambdaClient(context), jacksonObjectMapper())
+        LambdaBuildProcess(
+            context,
+            getLambdaClient(context),
+            jacksonObjectMapper(),
+            S3WorkingDirectoryTransfer(getTransferManager(context)),
+            UnixCommandLinePreparer(context)
+        )
 
     private fun getLambdaClient(context: BuildRunnerContext) =
         withAWSClients<AWSLambdaAsync, Exception>(context.runnerParameters) { clients ->
@@ -32,6 +42,13 @@ class LambdaRunner : AgentBuildRunner {
             }
 
             clientBuilder.build()
+        }
+
+    private fun getTransferManager(context: BuildRunnerContext) =
+        withAWSClients<TransferManager, Exception>(context.runnerParameters) { clients ->
+            TransferManagerBuilder.standard()
+                .withS3Client(clients.createS3Client())
+                .build()
         }
 
 

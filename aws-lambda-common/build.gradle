@@ -1,3 +1,5 @@
+apply plugin: 'com.github.rodm.teamcity-agent'
+
 buildscript {
     repositories {
         mavenCentral()
@@ -6,4 +8,13 @@ buildscript {
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
+}
+
+dependencies {
+    testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
+    compile 'com.amazonaws:aws-java-sdk-s3:1.12.167'
+}
+
+repositories {
+    mavenCentral()
 }

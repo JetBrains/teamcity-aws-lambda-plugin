@@ -7,6 +7,7 @@ object LambdaConstants {
 
 
     const val FUNCTION_NAME = "TeamcityLambdaRunner"
+    const val BUCKET_NAME = "teamcity-lambda-runner-bucket"
     const val EDIT_PARAMS_JSP = "editLambdaParams.jsp"
     const val EDIT_PARAMS_HTML = "editLambdaParams.html"
     const val VIEW_PARAMS_JSP = "viewLambdaParams.jsp"
@@ -17,6 +18,8 @@ object LambdaConstants {
     const val PASSWORD_SYSTEM_PROPERTY = "system.teamcity.auth.password"
     const val TEAMCITY_SERVER_URL = "teamcity.serverUrl"
     const val TEAMCITY_BUILD_ID = "teamcity.build.id"
+    const val TEAMCITY_PROJECT_NAME = "teamcity.projectName"
+
 
     const val LAMBDA_SETTINGS_STEP = "lambda_settings_settings"
     const val LAMBDA_ENDPOINT_URL_PARAM = "lambda.endpoint_url"
@@ -28,4 +31,6 @@ object LambdaConstants {
     const val SCRIPT_CONTENT_LABEL = "Custom Script"
     const val SCRIPT_CONTENT_NOTE = "A Unix-like script, which will be executed as a shell script in a Unix-like environment."
     const val SCRIPT_CONTENT_ERROR = "Script content must be specified"
+    const val SCRIPT_CONTENT_FILENAME = "teamcity-lambda-execution.sh"
+    const val SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX = "directory=\$(echo \$(dirname \$0) | cut -d ' ' -f1);cd \${directory[0]};\n"
 }
