@@ -7,6 +7,7 @@ import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import jetbrains.buildServer.BaseTestCase
+import jetbrains.buildServer.runner.lambda.build.ProcessFailedException
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
 import org.jmock.Mockery
@@ -67,7 +68,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.logAsync(SERVICE_MESSAGE).join()
+            detachedBuildApi.logAsync(SERVICE_MESSAGE).await()
         }
     }
 
@@ -87,18 +88,74 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         }
     }
 
+    @Test
+    fun testFailBuildAsync(){
+        runBlocking {
+            engine = MockEngine { request ->
+                Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
+                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, TextContent::class.java)
+                Assert.assertEquals((request.body as TextContent).text, "##teamcity[buildProblem description='$DESCRIPTION']")
+                respond(
+                    content = "",
+                )
+            }
+            val detachedBuildApi = createClient()
+            detachedBuildApi.failBuildAsync(ProcessFailedException(DESCRIPTION)).await()
+        }
+    }
+
+    @Test
+    fun testFailBuildAsync_ErrorId(){
+        runBlocking {
+            engine = MockEngine { request ->
+                Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
+                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, TextContent::class.java)
+                Assert.assertEquals((request.body as TextContent).text, "##teamcity[buildProblem description='$DESCRIPTION' identity='$ERROR_ID']")
+                respond(
+                    content = "",
+                )
+            }
+            val detachedBuildApi = createClient()
+            detachedBuildApi.failBuildAsync(ProcessFailedException(DESCRIPTION), ERROR_ID).await()
+        }
+    }
+
+    @Test
+    fun testLogWarningAsync(){
+        runBlocking {
+            engine = MockEngine { request ->
+                Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
+                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, TextContent::class.java)
+                Assert.assertEquals((request.body as TextContent).text, "##teamcity[message text='$MESSAGE' status='WARNING']")
+                respond(
+                    content = "",
+                )
+            }
+            val detachedBuildApi = createClient()
+            detachedBuildApi.logWarningAsync(MESSAGE).await()
+        }
+    }
     private fun createClient() = MyDetachedBuildApi(runDetails, context, engine)
 
     companion object {
-        const val TEAMCITY_URl = "http://teamcityUrl"
-        const val BUILD_ID = "buildId"
-        const val USERNAME = "username"
-        const val PASSWORD = "password"
-        val ENV_PARAMS = emptyMap<String, String>()
-        const val SCRIPT_CONTENT = "scriptContent"
-        const val DIRECTORY_ID = "directoryId"
+        private const val TEAMCITY_URl = "http://teamcityUrl"
+        private const val BUILD_ID = "buildId"
+        private const val USERNAME = "username"
+        private const val PASSWORD = "password"
+        private val ENV_PARAMS = emptyMap<String, String>()
+        private const val SCRIPT_CONTENT = "scriptContent"
+        private const val DIRECTORY_ID = "directoryId"
 
 
-        const val SERVICE_MESSAGE = "serviceMessage"
+        private const val SERVICE_MESSAGE = "serviceMessage"
+        private const val DESCRIPTION = "description"
+        private const val ERROR_ID = "errorId"
+        private const val MESSAGE = "message"
     }
 }

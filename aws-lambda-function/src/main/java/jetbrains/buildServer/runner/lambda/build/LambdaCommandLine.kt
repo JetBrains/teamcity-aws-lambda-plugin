@@ -14,18 +14,51 @@ class LambdaCommandLine internal constructor(
 
     fun executeCommandLine(detachedBuildApi: DetachedBuildApi): List<Deferred<Any?>> {
         val process = generalCommandLine.createProcess()
-        val stream = process.inputStream
-        val buffer = ByteArray(8192)
         val logJobs = mutableListOf<Deferred<Any?>>()
-        var size = stream.read(buffer)
-        while (size != -1) {
-            logJobs.add(detachedBuildApi.logAsync(buffer.decodeToString(0, size)))
-            size = stream.read(buffer)
-        }
+        logProcessOutput(process, logJobs, detachedBuildApi)
 
-        logger.log("Process finished with exit code ${process.waitFor()}\n")
 
+        logJobs.add(logProcessExitAsync(process, detachedBuildApi))
         return logJobs.toList()
+    }
+
+    private fun logProcessOutput(
+        process: Process,
+        logJobs: MutableList<Deferred<Any?>>,
+        detachedBuildApi: DetachedBuildApi
+    ) {
+        val inputStream = process.inputStream
+        val inputStreamBuffer = ByteArray(8192)
+        var inputStreamSize = inputStream.read(inputStreamBuffer)
+        val errorStream = process.errorStream
+        val errorStreamBuffer = ByteArray(8192)
+        var errorStreamSize = errorStream.read(errorStreamBuffer)
+
+        while (inputStreamSize != -1 || errorStreamSize != -1) {
+            if (inputStreamSize != -1) {
+                logJobs.add(detachedBuildApi.logAsync(inputStreamBuffer.decodeToString(0, inputStreamSize)))
+                inputStreamSize = inputStream.read(inputStreamBuffer)
+            }
+
+            if (errorStreamSize != -1) {
+                logJobs.add(detachedBuildApi.logWarningAsync(errorStreamBuffer.decodeToString(0, errorStreamSize)))
+                errorStreamSize = errorStream.read(errorStreamBuffer)
+            }
+        }
+    }
+
+    private fun logProcessExitAsync(process: Process, detachedBuildApi: DetachedBuildApi): Deferred<Any?> {
+
+        val exitCode = process.waitFor()
+        val exitMessage = "Process finished with exit code $exitCode\n"
+        logger.log(exitMessage)
+
+
+        return if (exitCode != 0) {
+            detachedBuildApi.failBuildAsync(ProcessFailedException(exitMessage))
+        } else {
+            detachedBuildApi.logAsync(exitMessage)
+        }
     }
 
     companion object {

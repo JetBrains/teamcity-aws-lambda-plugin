@@ -20,17 +20,28 @@ class TasksRequestHandler : RequestStreamHandler {
 
     override fun handleRequest(input: InputStream, output: OutputStream, context: Context) {
         val runDetails: RunDetails = objectMapper.readValue(input)
-
         val detachedBuildApi = MyDetachedBuildApi(runDetails, context, CIO.create())
-        val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager())
 
-        val workingDirectory = workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
+        try {
+            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager())
 
-        val jobs = LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
+            val workingDirectory =
+                workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
 
-        runBlocking {
-            jobs.awaitAll()
-            detachedBuildApi.finishBuild()
+            val jobs =
+                LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
+
+            runBlocking {
+                jobs.awaitAll()
+            }
+        } catch (e: Throwable) {
+            runBlocking {
+                detachedBuildApi.failBuildAsync(e).await()
+            }
+        } finally {
+            runBlocking {
+                detachedBuildApi.finishBuild()
+            }
         }
     }
 

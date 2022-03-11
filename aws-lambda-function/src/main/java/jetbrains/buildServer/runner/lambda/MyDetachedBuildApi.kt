@@ -10,6 +10,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 
@@ -42,6 +43,16 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
     private val teamcityBuildRestApi =
         "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
 
+    private fun getServiceMessage(messageType: String, params: Map<String, String>): String {
+        val stringBuilder = StringBuilder("##teamcity[$messageType")
+
+        params.forEach { (key, value) -> stringBuilder.append(" $key='$value'") }
+
+        stringBuilder.append("]")
+
+        return stringBuilder.toString()
+    }
+
     override fun logAsync(serviceMessage: String?) =
         CoroutineScope(Dispatchers.IO).async {
             serviceMessage?.let {
@@ -51,8 +62,27 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
             }
         }
 
+    override fun logWarningAsync(message: String?): Deferred<Any?> = logAsync(
+        getServiceMessage(
+            "message",
+            mapOf(
+                Pair("text", message ?: ""),
+                Pair("status", "WARNING")
+            )
+        )
+    )
+
 
     override suspend fun finishBuild() {
         client.put<Any>("$teamcityBuildRestApi/finish")
     }
+
+    override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> =
+        CoroutineScope(Dispatchers.IO).async {
+            val params = mutableMapOf(
+                Pair("description", exception.localizedMessage),
+            )
+            errorId?.let { params["identity"] = it }
+            logAsync(getServiceMessage("buildProblem", params)).await()
+        }
 }
