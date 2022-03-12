@@ -1,0 +1,12 @@
+Resources:
+  TeamcityLambdaRunner:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
+      MemorySize: 512
+      Timeout: 900
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: .

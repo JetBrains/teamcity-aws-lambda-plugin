@@ -36,3 +36,10 @@ repositories {
         url = 'https://download.jetbrains.com/teamcity-repository'
     }
 }
+
+task copyRuntimeDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into 'build/dependency'
+}
+
+build.dependsOn copyRuntimeDependencies
