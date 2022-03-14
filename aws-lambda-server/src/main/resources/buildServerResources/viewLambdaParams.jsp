@@ -23,5 +23,13 @@
 </div>
 
 <div class="parameter">
+    ${ecr_image_label}: <props:displayValue name="${ecr_image_param}" emptyValue="default"/>
+</div>
+
+<div class="parameter">
+    ${memory_size_label}: <props:displayValue name="${memory_size_param}" emptyValue="default"/>
+</div>
+
+<div class="parameter">
     Custom script: <props:displayValue name="script.content" emptyValue="<empty>" showInPopup="true" popupTitle="Script content" popupLinkText="view script content"/>
 </div>

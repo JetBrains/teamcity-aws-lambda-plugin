@@ -1,6 +1,8 @@
 package jetbrains.buildServer.runner.lambda
 
 import com.amazonaws.client.builder.AwsClientBuilder
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import com.amazonaws.services.lambda.AWSLambdaAsync
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
 import com.amazonaws.services.s3.transfer.TransferManager
@@ -11,18 +13,22 @@ import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_P
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 
 class LambdaRunner : AgentBuildRunner {
-    override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess =
-        LambdaBuildProcess(
+    override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess {
+        val awsLambda = getLambdaClient(context)
+        return LambdaBuildProcess(
             context,
-            getLambdaClient(context),
+            awsLambda,
             jacksonObjectMapper(),
             S3WorkingDirectoryTransfer(getTransferManager(context)),
-            UnixCommandLinePreparer(context)
+            UnixCommandLinePreparer(context),
+            LambdaFunctionResolverImpl(context, awsLambda, getIamClient(context))
         )
+    }
 
     private fun getLambdaClient(context: BuildRunnerContext) =
         withAWSClients<AWSLambdaAsync, Exception>(context.runnerParameters) { clients ->
@@ -48,6 +54,14 @@ class LambdaRunner : AgentBuildRunner {
         withAWSClients<TransferManager, Exception>(context.runnerParameters) { clients ->
             TransferManagerBuilder.standard()
                 .withS3Client(clients.createS3Client())
+                .build()
+        }
+
+    private fun getIamClient(context: BuildRunnerContext) =
+        withAWSClients<AmazonIdentityManagement, Exception>(context.runnerParameters) { clients ->
+            AmazonIdentityManagementClientBuilder.standard()
+                .withClientConfiguration(clients.clientConfiguration)
+                .withCredentials(getCredentialsProvider(context.runnerParameters))
                 .build()
         }
 

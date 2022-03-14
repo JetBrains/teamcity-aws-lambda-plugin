@@ -2,6 +2,7 @@ Resources:
   TeamcityLambdaRunner:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: "TeamcityLambdaRunner-java11"
       PackageType: Image
       ImageConfig:
         Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]

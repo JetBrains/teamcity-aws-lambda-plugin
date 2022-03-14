@@ -25,6 +25,12 @@
 <c:set var="script_content_param" value="<%=LambdaConstants.SCRIPT_CONTENT_PARAM%>"/>
 <c:set var="script_content_label" value="<%=LambdaConstants.SCRIPT_CONTENT_LABEL%>"/>
 <c:set var="script_content_note" value="<%=LambdaConstants.SCRIPT_CONTENT_NOTE%>"/>
+<c:set var="ecr_image_param" value="<%=LambdaConstants.ECR_IMAGE_URI_PARAM%>"/>
+<c:set var="ecr_image_label" value="<%=LambdaConstants.ECR_IMAGE_URI_LABEL%>"/>
+<c:set var="ecr_image_note" value="<%=LambdaConstants.ECR_IMAGE_URI_NOTE%>"/>
+<c:set var="memory_size_param" value="<%=LambdaConstants.MEMORY_SIZE_PARAM%>"/>
+<c:set var="memory_size_label" value="<%=LambdaConstants.MEMORY_SIZE_LABEL%>"/>
+<c:set var="memory_size_note" value="<%=LambdaConstants.MEMORY_SIZE_NOTE%>"/>
 <c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
 
 

@@ -9,6 +9,7 @@ import jetbrains.buildServer.agent.BuildParametersMap
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.api.Invocation
@@ -30,6 +31,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var workingDirectoryTransfer: WorkingDirectoryTransfer
     private lateinit var workingDirectory: File
     private lateinit var commandLinePreparer: CommandLinePreparer
+    private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
 
 
     @BeforeMethod
@@ -46,6 +48,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         workingDirectoryTransfer = m.mock(WorkingDirectoryTransfer::class.java)
         workingDirectory = m.mock(File::class.java)
         commandLinePreparer = m.mock(CommandLinePreparer::class.java)
+        lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
 
         m.checking(object : Expectations() {
             init {
@@ -107,6 +110,9 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
                 oneOf(workingDirectoryTransfer).upload(workingDirectory)
                 will(returnValue(DIRECTORY_ID))
+                oneOf(lambdaFunctionResolver).resolveFunction()
+                will(returnValue(FUNCTION_NAME))
+
                 allowing(objectMapper).writeValueAsString(
                     RunDetails(
                         USERNAME,
@@ -121,7 +127,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(OBJECT_STRING))
 
                 oneOf(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(LambdaConstants.FUNCTION_NAME).withPayload(
+                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
                         OBJECT_STRING
                     )
                 )
@@ -171,6 +177,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
                 oneOf(workingDirectoryTransfer).upload(workingDirectory)
                 will(returnValue(DIRECTORY_ID))
+                oneOf(lambdaFunctionResolver).resolveFunction()
+                will(returnValue(FUNCTION_NAME))
 
                 allowing(objectMapper).writeValueAsString(
                     RunDetails(
@@ -186,7 +194,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(OBJECT_STRING))
 
                 oneOf(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(LambdaConstants.FUNCTION_NAME).withPayload(
+                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
                         OBJECT_STRING
                     )
                 )
@@ -236,6 +244,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
                 oneOf(workingDirectoryTransfer).upload(workingDirectory)
                 will(returnValue(DIRECTORY_ID))
+                oneOf(lambdaFunctionResolver).resolveFunction()
+                will(returnValue(FUNCTION_NAME))
 
                 allowing(objectMapper).writeValueAsString(
                     RunDetails(
@@ -256,7 +266,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 })
 
                 never(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(LambdaConstants.FUNCTION_NAME).withPayload(
+                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
                         OBJECT_STRING
                     )
                 )
@@ -288,7 +298,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
         awsLambda,
         objectMapper,
         workingDirectoryTransfer,
-        commandLinePreparer
+        commandLinePreparer,
+        lambdaFunctionResolver
     )
 
     companion object {
@@ -302,5 +313,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
         private const val DIRECTORY_ID = "directoryId"
         private const val PROJECT_NAME = "projectName"
+        private const val FUNCTION_NAME = "functionName"
     }
 }

@@ -33,6 +33,22 @@
         </td>
     </tr>
 
+    <tr data-steps="${lambda_settings_step}">
+        <th><label for="${ecr_image_param}">${ecr_image_label}: </label></th>
+        <td><props:textProperty name="${ecr_image_param}" className="longField" />
+            <span class="smallNote">${ecr_image_note}</span><span class="error" id="error_${ecr_image_param}"></span>
+
+        </td>
+    </tr>
+
+    <tr data-steps="${lambda_settings_step}">
+        <th><label for="${memory_size_param}">${memory_size_label}: <l:star/></label></th>
+        <td><props:textProperty name="${memory_size_param}" className="longField" />
+            <span class="smallNote">${memory_size_note}</span><span class="error" id="error_${memory_size_param}"></span>
+
+        </td>
+    </tr>
+
     <tr id="script.content.container" class="scriptMode customScript" data-steps="${lambda_settings_step}">
         <th>
             <label for="${script_content_param}">${script_content_label}:<l:star/></label>

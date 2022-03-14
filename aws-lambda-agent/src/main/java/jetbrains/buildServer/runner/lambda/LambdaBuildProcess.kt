@@ -8,6 +8,7 @@ import jetbrains.buildServer.agent.BuildProcess
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
@@ -15,7 +16,8 @@ class LambdaBuildProcess(
     private val awsLambda: AWSLambdaAsync,
     private val objectMapper: ObjectMapper,
     private val workingDirectoryTransfer: WorkingDirectoryTransfer,
-    private val unixCommandLinePreparer: CommandLinePreparer
+    private val unixCommandLinePreparer: CommandLinePreparer,
+    private val lambdaFunctionResolver: LambdaFunctionResolver
 ) :
     BuildProcess {
 
@@ -29,8 +31,10 @@ class LambdaBuildProcess(
         val directoryId = workingDirectoryTransfer.upload(context.workingDirectory)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
+        val functionName = lambdaFunctionResolver.resolveFunction()
+
         val invokeRequest = InvokeRequest()
-            .withFunctionName(LambdaConstants.FUNCTION_NAME)
+            .withFunctionName(functionName)
             .withPayload(objectMapper.writeValueAsString(runDetails))
 
         if (isInterrupted) {
