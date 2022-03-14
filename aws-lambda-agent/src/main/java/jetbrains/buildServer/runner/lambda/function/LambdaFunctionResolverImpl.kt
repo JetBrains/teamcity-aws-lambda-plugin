@@ -4,18 +4,16 @@ import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
 import com.amazonaws.services.identitymanagement.model.GetPolicyRequest
-import com.amazonaws.services.lambda.AWSLambdaAsync
+import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
-import java.net.URL
-import java.nio.ByteBuffer
-import java.nio.channels.Channels
 
 class LambdaFunctionResolverImpl(
     private val context: BuildRunnerContext,
-    private val awsLambdaAsync: AWSLambdaAsync,
-    private val iam: AmazonIdentityManagement
+    private val awsLambda: AWSLambda,
+    private val iam: AmazonIdentityManagement,
+    private val functionDownloader: FunctionDownloader
 ) :
     LambdaFunctionResolver {
     private val memorySize = context.runnerParameters.getValue(LambdaConstants.MEMORY_SIZE_PARAM).toInt()
@@ -31,7 +29,7 @@ class LambdaFunctionResolverImpl(
 
         try {
             //TODO: Check Function Details: TW-75372
-            awsLambdaAsync.getFunction(getFunctionRequest)
+            awsLambda.getFunction(getFunctionRequest)
         } catch (e: ResourceNotFoundException) {
             createFunction(functionImage, lambdaFunctionName)
         } catch (e: AWSLambdaException) {
@@ -51,7 +49,7 @@ class LambdaFunctionResolverImpl(
             CreateFunctionRequest().apply {
                 functionName = lambdaFunctionName
                 code = FunctionCode().apply {
-                    zipFile = downloadFunctionCode()
+                    zipFile = functionDownloader.downloadFunctionCode()
                     handler = LambdaConstants.FUNCTION_HANDLER
                 }
                 role = userRole
@@ -76,7 +74,7 @@ class LambdaFunctionResolverImpl(
             }
         }
 
-        awsLambdaAsync.createFunction(createFunctionRequest)
+        awsLambda.createFunction(createFunctionRequest)
         awaitFunctionCreation(lambdaFunctionName)
     }
 
@@ -87,7 +85,7 @@ class LambdaFunctionResolverImpl(
 
         for (i in 1..MAX_TRIES) {
             try {
-                awsLambdaAsync.invoke(invokeRequest)
+                awsLambda.invoke(invokeRequest)
                 break
             } catch (e: ResourceConflictException) {
                 Thread.sleep(WAIT_TIME)
@@ -107,10 +105,9 @@ class LambdaFunctionResolverImpl(
 
     private fun resolveRoleArn(): String {
         val arn = iam.user.user.arn
-        val accountId = arn.substring(LambdaConstants.IAM_SUFFIX.length + 2, arn.indexOf(":user"))
-        val lambdaPolicyArn = "${LambdaConstants.IAM_SUFFIX}::$accountId:policy/${LambdaConstants.LAMBDA_ARN_NAME}"
-        val lambdaRoleArn = "${LambdaConstants.IAM_SUFFIX}::$accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
-
+        val accountId = arn.substring(LambdaConstants.IAM_PREFIX.length + 2, arn.indexOf(":user"))
+        val lambdaPolicyArn = "${LambdaConstants.IAM_PREFIX}::$accountId:policy/${LambdaConstants.LAMBDA_ARN_NAME}"
+        val lambdaRoleArn = "${LambdaConstants.IAM_PREFIX}::$accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
 
         if (!policyExists(lambdaPolicyArn)) {
             val createPolicyRequest = CreatePolicyRequest().apply {
@@ -162,17 +159,6 @@ class LambdaFunctionResolverImpl(
         } catch (e: NoSuchEntityException) {
             false
         }
-
-
-    private fun downloadFunctionCode(): ByteBuffer {
-        val readableByteChannel = Channels.newChannel(URL(LambdaConstants.S3_CODE_FUNCTION_URL).openStream())
-        val tempFile = kotlin.io.path.createTempFile().toFile()
-        val tempFileChannel = tempFile.outputStream().channel
-
-        tempFileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
-
-        return ByteBuffer.wrap(tempFile.readBytes())
-    }
 
     companion object {
         const val MAX_TRIES = 10

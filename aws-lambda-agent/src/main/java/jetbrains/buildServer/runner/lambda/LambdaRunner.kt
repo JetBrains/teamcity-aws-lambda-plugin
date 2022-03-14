@@ -14,6 +14,7 @@ import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
+import jetbrains.buildServer.runner.lambda.function.ZipFunctionDownloader
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 
@@ -26,7 +27,7 @@ class LambdaRunner : AgentBuildRunner {
             jacksonObjectMapper(),
             S3WorkingDirectoryTransfer(getTransferManager(context)),
             UnixCommandLinePreparer(context),
-            LambdaFunctionResolverImpl(context, awsLambda, getIamClient(context))
+            LambdaFunctionResolverImpl(context, awsLambda, getIamClient(context), ZipFunctionDownloader(LambdaConstants.S3_CODE_FUNCTION_URL))
         )
     }
 
