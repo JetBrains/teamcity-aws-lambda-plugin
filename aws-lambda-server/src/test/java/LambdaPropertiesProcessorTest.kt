@@ -72,6 +72,66 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         )
     }
 
+    @Test
+    @Throws(Exception::class)
+    fun testProcess_NoMemorySize() {
+        val propertiesProcessor = createPropertiesProcessor()
+
+        val properties = createDefaultProperties()
+
+        properties.remove(LambdaConstants.MEMORY_SIZE_PARAM)
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.MEMORY_SIZE_PARAM,
+                    LambdaConstants.MEMORY_SIZE_ERROR
+                )
+            )
+        )
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testProcess_MemorySizeNotNumber() {
+        val propertiesProcessor = createPropertiesProcessor()
+
+        val properties = createDefaultProperties()
+
+        properties[LambdaConstants.MEMORY_SIZE_PARAM] = "error"
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.MEMORY_SIZE_PARAM,
+                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+                )
+            )
+        )
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testProcess_MemorySizeNotValidMemory() {
+        val propertiesProcessor = createPropertiesProcessor()
+
+        val properties = createDefaultProperties()
+
+        properties[LambdaConstants.MEMORY_SIZE_PARAM] = (LambdaConstants.MAX_MEMORY_SIZE + 1).toString()
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.MEMORY_SIZE_PARAM,
+                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+                )
+            )
+        )
+    }
+
     private fun createPropertiesProcessor() = LambdaPropertiesProcessor()
 
     private fun createDefaultProperties(): MutableMap<String, String> {
@@ -80,6 +140,7 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         properties[AWSCommonParams.ACCESS_KEY_ID_PARAM] = ACCESS_KEY_ID
         properties[AWSCommonParams.REGION_NAME_PARAM] = REGION_NAME
         properties[LambdaConstants.SCRIPT_CONTENT_PARAM] = SCRIPT_CONTENT
+        properties[LambdaConstants.MEMORY_SIZE_PARAM] = MEMORY_SIZE
         return properties
     }
 
@@ -92,5 +153,6 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         const val BAD_URL = "badUrl"
         const val SCRIPT_CONTENT = "scriptContent"
+        const val MEMORY_SIZE = "512"
     }
 }

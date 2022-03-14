@@ -49,7 +49,9 @@ object LambdaConstants {
     const val MEMORY_SIZE_NOTE =
         "Lambda memory size. Must be an integer value between 128MB and 10,240MB"
     const val MEMORY_SIZE_ERROR = "Memory size must be specified"
-    const val MEMORY_SIZE_VALUE_ERROR = "Memory size must be an integer value between 128MB and 10,240MB"
+    const val MIN_MEMORY_SIZE = 128
+    const val MAX_MEMORY_SIZE = 10240
+    const val MEMORY_SIZE_VALUE_ERROR = "Memory size must be an integer value between ${MIN_MEMORY_SIZE}MB and ${MAX_MEMORY_SIZE}MB"
 
     const val MAX_TIMEOUT = 900
 
