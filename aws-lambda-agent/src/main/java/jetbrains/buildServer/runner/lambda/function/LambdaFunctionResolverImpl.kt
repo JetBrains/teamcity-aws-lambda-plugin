@@ -21,7 +21,10 @@ class LambdaFunctionResolverImpl(
 
     override fun resolveFunction(): String {
         val functionImage = context.runnerParameters[LambdaConstants.ECR_IMAGE_URI_PARAM] ?: defaultImage
-        val lambdaFunctionName = "${LambdaConstants.FUNCTION_NAME}-$functionImage"
+        val normalizedFunctionImageName = functionImage
+            .substringAfter("/")
+            .substringBefore(":")
+        val lambdaFunctionName = "${LambdaConstants.FUNCTION_NAME}-$normalizedFunctionImageName"
 
         val getFunctionRequest = GetFunctionRequest().apply {
             functionName = lambdaFunctionName
@@ -64,7 +67,6 @@ class LambdaFunctionResolverImpl(
                 functionName = lambdaFunctionName
                 code = FunctionCode().apply {
                     imageUri = functionImageUri
-                    handler = LambdaConstants.FUNCTION_HANDLER
                 }
                 role = userRole
                 publish = true

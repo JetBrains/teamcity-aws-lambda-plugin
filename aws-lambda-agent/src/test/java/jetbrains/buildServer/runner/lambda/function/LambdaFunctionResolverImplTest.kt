@@ -289,7 +289,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     functionName = lambdaFunctionName
                     code = FunctionCode().apply {
                         imageUri = ECR_IMAGE_URI
-                        handler = LambdaConstants.FUNCTION_HANDLER
                     }
                     role = ROLE_ARN
                     publish = true
