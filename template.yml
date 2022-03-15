@@ -6,7 +6,7 @@ Resources:
       PackageType: Image
       ImageConfig:
         Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
-      MemorySize: 512
+      MemorySize: 4098
       Timeout: 900
     Metadata:
       Dockerfile: Dockerfile

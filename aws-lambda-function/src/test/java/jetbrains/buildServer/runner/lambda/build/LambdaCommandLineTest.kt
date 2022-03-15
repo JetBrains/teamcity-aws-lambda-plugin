@@ -189,7 +189,9 @@ class LambdaCommandLineTest : BaseTestCase() {
         val generalCommandLine = LambdaCommandLine.createCommandLine(workingDirectory, runDetails)
         Assert.assertEquals(generalCommandLine.exePath, "/usr/bin/sh")
         Assert.assertEquals(generalCommandLine.workDirectory, workingDirectory)
-        Assert.assertEquals(generalCommandLine.envParams, ENV_PARAMS + System.getenv())
+        val env = System.getenv().toMutableMap()
+        env.remove("JAVA_HOME")
+        Assert.assertEquals(generalCommandLine.envParams, ENV_PARAMS + env)
         Assert.assertEquals(
             generalCommandLine.parametersList.list,
             listOf("$ABSOLUTE_PATH/${runDetails.directoryId}/${runDetails.customScriptFilename}")
