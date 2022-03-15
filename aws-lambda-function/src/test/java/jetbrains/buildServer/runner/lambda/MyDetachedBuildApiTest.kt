@@ -141,6 +141,18 @@ class MyDetachedBuildApiTest : BaseTestCase() {
             detachedBuildApi.logWarningAsync(MESSAGE).await()
         }
     }
+
+    @Test
+    fun testGetServiceMessage_EscapedValues(){
+        engine = MockEngine{ respond("")}
+        val detachedBuildApi = createClient()
+        val params = mapOf(Pair(DESCRIPTION, ESCAPED_VALUES_MESSAGE))
+        val serviceMessage = detachedBuildApi.getServiceMessage(MESSAGE, params)
+
+        val expectedServiceMessage = "##teamcity[$MESSAGE $DESCRIPTION='$EXPECTED_ESCAPED_VALUES_MESSAGE']"
+        Assert.assertEquals(serviceMessage, expectedServiceMessage)
+    }
+
     private fun createClient() = MyDetachedBuildApi(runDetails, context, engine)
 
     companion object {
@@ -157,5 +169,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         private const val DESCRIPTION = "description"
         private const val ERROR_ID = "errorId"
         private const val MESSAGE = "message"
+        private const val ESCAPED_VALUES_MESSAGE = "| ' [ ] \n"
+        private const val EXPECTED_ESCAPED_VALUES_MESSAGE = "|| |' |[ |] |\n"
     }
 }

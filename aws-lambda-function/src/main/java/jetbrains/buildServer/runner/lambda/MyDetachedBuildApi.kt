@@ -22,7 +22,7 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
-                    context.logger.log(message)
+                    context.logger.log("$message\n")
                 }
             }
         }
@@ -43,10 +43,17 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
     private val teamcityBuildRestApi =
         "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
 
-    private fun getServiceMessage(messageType: String, params: Map<String, String>): String {
+    private fun escapeValue(value: String) = value
+        .replace("|", "||")
+        .replace("'", "|'")
+        .replace("[", "|[")
+        .replace("]", "|]")
+        .replace("\n", "|\n")
+
+    internal fun getServiceMessage(messageType: String, params: Map<String, String>): String {
         val stringBuilder = StringBuilder("##teamcity[$messageType")
 
-        params.forEach { (key, value) -> stringBuilder.append(" $key='$value'") }
+        params.forEach { (key, value) -> stringBuilder.append(" $key='${escapeValue(value)}'") }
 
         stringBuilder.append("]")
 

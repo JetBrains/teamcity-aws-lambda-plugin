@@ -189,7 +189,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         val generalCommandLine = LambdaCommandLine.createCommandLine(workingDirectory, runDetails)
         Assert.assertEquals(generalCommandLine.exePath, "/usr/bin/sh")
         Assert.assertEquals(generalCommandLine.workDirectory, workingDirectory)
-        Assert.assertEquals(generalCommandLine.envParams, ENV_PARAMS)
+        Assert.assertEquals(generalCommandLine.envParams, ENV_PARAMS + System.getenv())
         Assert.assertEquals(
             generalCommandLine.parametersList.list,
             listOf("$ABSOLUTE_PATH/${runDetails.directoryId}/${runDetails.customScriptFilename}")
@@ -201,7 +201,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         private const val BUILD_ID = "buildId"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
-        private val ENV_PARAMS = mapOf<String, String>(Pair("key", "value"))
+        private val ENV_PARAMS = mapOf(Pair("key", "value"))
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
         private const val ABSOLUTE_PATH = "absolutePath"

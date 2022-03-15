@@ -62,6 +62,8 @@ class LambdaCommandLine internal constructor(
     }
 
     companion object {
+        private const val JAVA_HOME = "JAVA_HOME"
+
         operator fun invoke(runDetails: RunDetails, logger: LambdaLogger, workingDirectory: File): LambdaCommandLine {
             val generalCommandLine = createCommandLine(workingDirectory, runDetails)
 
@@ -73,14 +75,25 @@ class LambdaCommandLine internal constructor(
             runDetails: RunDetails
         ): GeneralCommandLine {
             val generalCommandLine = GeneralCommandLine()
+            val mergedEnvParams = mergeEnvParams(runDetails)
 
             generalCommandLine.apply {
                 exePath = "/usr/bin/sh"
                 setWorkingDirectory(workingDirectory)
                 addParameter("${workingDirectory.absolutePath}/${runDetails.directoryId}/${runDetails.customScriptFilename}")
-                envParams = runDetails.envParams
+                envParams = mergedEnvParams
             }
             return generalCommandLine
+        }
+
+        private fun mergeEnvParams(runDetails: RunDetails): Map<String, String> {
+            val envParams = runDetails.envParams.toMutableMap()
+
+            envParams.putAll(System.getenv())
+
+            //Need to remove some the JAVA_HOME in order to not interfere with java programs
+            envParams.remove(JAVA_HOME)
+            return envParams
         }
     }
 }
