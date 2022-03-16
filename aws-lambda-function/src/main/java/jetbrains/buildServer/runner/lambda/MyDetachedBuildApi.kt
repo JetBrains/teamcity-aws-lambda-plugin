@@ -9,13 +9,15 @@ import io.ktor.client.features.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.content.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 
 
-class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpClientEngine) :
+class MyDetachedBuildApi(
+    runDetails: RunDetails,
+    context: Context,
+    engine: HttpClientEngine,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) :
     DetachedBuildApi {
 
     private val client = HttpClient(engine) {
@@ -61,7 +63,7 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
     }
 
     override fun logAsync(serviceMessage: String?) =
-        CoroutineScope(Dispatchers.IO).async {
+        CoroutineScope(dispatcher).async {
             serviceMessage?.let {
                 client.post<Any>("$teamcityBuildRestApi/log") {
                     body = TextContent(serviceMessage, ContentType.Text.Plain)
@@ -85,7 +87,7 @@ class MyDetachedBuildApi(runDetails: RunDetails, context: Context, engine: HttpC
     }
 
     override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> =
-        CoroutineScope(Dispatchers.IO).async {
+        CoroutineScope(dispatcher).async {
             val params = mutableMapOf(
                 Pair("description", exception.localizedMessage),
             )

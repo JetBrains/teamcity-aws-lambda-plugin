@@ -9,18 +9,26 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.io.path.createTempDirectory
 
+@ExperimentalCoroutinesApi
 class TasksRequestHandler : RequestStreamHandler {
     private val objectMapper = jacksonObjectMapper()
 
     override fun handleRequest(input: InputStream, output: OutputStream, context: Context) {
         val runDetails: RunDetails = objectMapper.readValue(input)
-        val detachedBuildApi = MyDetachedBuildApi(runDetails, context, CIO.create())
+        val detachedBuildApi = MyDetachedBuildApi(
+            runDetails,
+            context,
+            CIO.create(),
+            newSingleThreadContext(MyDetachedBuildApi::class.toString())
+        )
 
         try {
             val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager())
