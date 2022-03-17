@@ -3,8 +3,8 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
-import com.amazonaws.services.lambda.AWSLambdaAsync
-import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder
+import com.amazonaws.services.lambda.AWSLambda
+import com.amazonaws.services.lambda.AWSLambdaClientBuilder
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -27,13 +27,18 @@ class LambdaRunner : AgentBuildRunner {
             jacksonObjectMapper(),
             S3WorkingDirectoryTransfer(getTransferManager(context)),
             UnixCommandLinePreparer(context),
-            LambdaFunctionResolverImpl(context, awsLambda, getIamClient(context), ZipFunctionDownloader(LambdaConstants.S3_CODE_FUNCTION_URL))
+            LambdaFunctionResolverImpl(
+                context,
+                awsLambda,
+                getIamClient(context),
+                ZipFunctionDownloader(LambdaConstants.S3_CODE_FUNCTION_URL)
+            )
         )
     }
 
     private fun getLambdaClient(context: BuildRunnerContext) =
-        withAWSClients<AWSLambdaAsync, Exception>(context.runnerParameters) { clients ->
-            val clientBuilder = AWSLambdaAsyncClientBuilder.standard()
+        withAWSClients<AWSLambda, Exception>(context.runnerParameters) { clients ->
+            val clientBuilder = AWSLambdaClientBuilder.standard()
                 .withClientConfiguration(clients.clientConfiguration)
                 .withCredentials(getCredentialsProvider(context.runnerParameters))
 

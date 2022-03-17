@@ -1,6 +1,7 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.lambda.AWSLambdaAsync
+import com.amazonaws.services.lambda.AWSLambda
+import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.agent.BuildFinishedStatus
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
     private val context: BuildRunnerContext,
-    private val awsLambda: AWSLambdaAsync,
+    private val awsLambda: AWSLambda,
     private val objectMapper: ObjectMapper,
     private val workingDirectoryTransfer: WorkingDirectoryTransfer,
     private val unixCommandLinePreparer: CommandLinePreparer,
@@ -35,13 +36,14 @@ class LambdaBuildProcess(
 
         val invokeRequest = InvokeRequest()
             .withFunctionName(functionName)
+            .withInvocationType(InvocationType.Event)
             .withPayload(objectMapper.writeValueAsString(runDetails))
 
         if (isInterrupted) {
             return BuildFinishedStatus.INTERRUPTED
         }
 
-        awsLambda.invokeAsync(invokeRequest)
+        awsLambda.invoke(invokeRequest)
         myIsFinished.set(true)
         return BuildFinishedStatus.FINISHED_DETACHED
     }
@@ -50,8 +52,7 @@ class LambdaBuildProcess(
         username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
         password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
         buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
-        teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL)
-            .replace("localhost", "172.17.0.1"),
+        teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
         envParams = context.buildParameters.environmentVariables,
         customScriptFilename = scriptContentFilename,
         directoryId = directoryId

@@ -1,6 +1,7 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.lambda.AWSLambdaAsync
+import com.amazonaws.services.lambda.AWSLambda
+import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
@@ -25,7 +26,7 @@ import java.io.File
 class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var context: BuildRunnerContext
-    private lateinit var awsLambda: AWSLambdaAsync
+    private lateinit var awsLambda: AWSLambda
     private lateinit var objectMapper: ObjectMapper
     private lateinit var buildParametersMap: BuildParametersMap
     private lateinit var workingDirectoryTransfer: WorkingDirectoryTransfer
@@ -42,7 +43,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
         context = m.mock(BuildRunnerContext::class.java)
-        awsLambda = m.mock(AWSLambdaAsync::class.java)
+        awsLambda = m.mock(AWSLambda::class.java)
         objectMapper = m.mock(ObjectMapper::class.java)
         buildParametersMap = m.mock(BuildParametersMap::class.java)
         workingDirectoryTransfer = m.mock(WorkingDirectoryTransfer::class.java)
@@ -126,77 +127,11 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 )
                 will(returnValue(OBJECT_STRING))
 
-                oneOf(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
-                        OBJECT_STRING
-                    )
-                )
-            }
-        })
-
-        val status = buildProcess.waitFor()
-        Assert.assertEquals(status, BuildFinishedStatus.FINISHED_DETACHED)
-        Assert.assertEquals(buildProcess.waitFor(), BuildFinishedStatus.FINISHED_DETACHED)
-        Assert.assertTrue(buildProcess.isFinished)
-        Assert.assertFalse(buildProcess.isInterrupted)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testWaitFor_LocalhostUrl() {
-        val buildProcess = createBuildProcess()
-
-        m.checking(object : Expectations() {
-            init {
-                allowing(context).configParameters
-                will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
-                            Pair(LambdaConstants.TEAMCITY_SERVER_URL, LOCALHOST),
+                oneOf(awsLambda).invoke(
+                    InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
+                        .withPayload(
+                            OBJECT_STRING
                         )
-                    )
-                )
-
-                allowing(buildParametersMap).systemProperties
-                will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
-                        )
-                    )
-                )
-                allowing(buildParametersMap).environmentVariables
-                will(returnValue(ENV_PARAMS))
-
-                allowing(context).workingDirectory
-                will(
-                    returnValue(workingDirectory)
-                )
-                oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
-                will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(workingDirectoryTransfer).upload(workingDirectory)
-                will(returnValue(DIRECTORY_ID))
-                oneOf(lambdaFunctionResolver).resolveFunction()
-                will(returnValue(FUNCTION_NAME))
-
-                allowing(objectMapper).writeValueAsString(
-                    RunDetails(
-                        USERNAME,
-                        PASSWORD,
-                        BUILD_ID,
-                        "172.17.0.1",
-                        ENV_PARAMS,
-                        CUSTOM_SCRIPT_FILENAME,
-                        DIRECTORY_ID
-                    )
-                )
-                will(returnValue(OBJECT_STRING))
-
-                oneOf(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
-                        OBJECT_STRING
-                    )
                 )
             }
         })
@@ -265,10 +200,11 @@ class LambdaBuildProcessTest : BaseTestCase() {
                     }
                 })
 
-                never(awsLambda).invokeAsync(
-                    InvokeRequest().withFunctionName(FUNCTION_NAME).withPayload(
-                        OBJECT_STRING
-                    )
+                never(awsLambda).invoke(
+                    InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
+                        .withPayload(
+                            OBJECT_STRING
+                        )
                 )
             }
         })
@@ -307,7 +243,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
         private const val URL = "url"
-        private const val LOCALHOST = "localhost"
         private const val BUILD_ID = "buildId"
         private val ENV_PARAMS = mapOf(Pair("key", "value"))
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
