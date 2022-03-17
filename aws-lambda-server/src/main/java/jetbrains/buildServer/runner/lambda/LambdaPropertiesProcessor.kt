@@ -22,14 +22,10 @@ class LambdaPropertiesProcessor : PropertiesProcessor {
             invalids[LambdaConstants.SCRIPT_CONTENT_PARAM] = LambdaConstants.SCRIPT_CONTENT_ERROR
         }
 
-        if (StringUtil.isEmpty(properties[LambdaConstants.MEMORY_SIZE_PARAM])) {
-            invalids[LambdaConstants.MEMORY_SIZE_PARAM] = LambdaConstants.MEMORY_SIZE_ERROR
-        } else {
-            when (properties.getValue(LambdaConstants.MEMORY_SIZE_PARAM).toIntOrNull()) {
-                null -> invalids[LambdaConstants.MEMORY_SIZE_PARAM] = LambdaConstants.MEMORY_SIZE_VALUE_ERROR
-                !in LambdaConstants.MIN_MEMORY_SIZE..LambdaConstants.MAX_MEMORY_SIZE -> invalids[LambdaConstants.MEMORY_SIZE_PARAM] =
-                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
-            }
+        when (properties[LambdaConstants.MEMORY_SIZE_PARAM]?.toIntOrNull()) {
+            null -> invalids[LambdaConstants.MEMORY_SIZE_PARAM] = LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+            !in LambdaConstants.MIN_MEMORY_SIZE..LambdaConstants.MAX_MEMORY_SIZE -> invalids[LambdaConstants.MEMORY_SIZE_PARAM] =
+                LambdaConstants.MEMORY_SIZE_VALUE_ERROR
         }
 
         return CollectionsUtil.convertCollection(invalids.entries) { source ->
