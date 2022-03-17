@@ -10,7 +10,6 @@ import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
@@ -36,11 +35,8 @@ class TasksRequestHandler : RequestStreamHandler {
             val workingDirectory =
                 workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
 
-            val jobs =
-                LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
-
             runBlocking {
-                jobs.awaitAll()
+                LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
             }
         } catch (e: Throwable) {
             runBlocking {

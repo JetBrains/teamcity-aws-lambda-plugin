@@ -86,12 +86,18 @@ class MyDetachedBuildApi(
         client.put<Any>("$teamcityBuildRestApi/finish")
     }
 
-    override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> =
-        CoroutineScope(dispatcher).async {
-            val params = mutableMapOf(
-                Pair("description", exception.localizedMessage),
+    override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> {
+        val descriptionEntry = Pair("description", exception.localizedMessage)
+        val params = if (errorId == null) {
+            mapOf(
+                descriptionEntry
             )
-            errorId?.let { params["identity"] = it }
-            logAsync(getServiceMessage("buildProblem", params)).await()
+        } else {
+            mapOf(
+                descriptionEntry,
+                Pair("identity", errorId)
+            )
         }
+        return logAsync(getServiceMessage("buildProblem", params))
+    }
 }

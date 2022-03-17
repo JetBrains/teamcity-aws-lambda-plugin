@@ -106,12 +106,12 @@ class LambdaCommandLineTest : BaseTestCase() {
             }
         })
 
-        val jobs = commandLine.executeCommandLine(detachedBuildApi)
-        Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
-
         runBlocking {
+            val jobs = commandLine.executeCommandLine(detachedBuildApi)
+            Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
             val values = jobs.awaitAll()
-            Assert.assertEquals(values, (0..numInputReads).toList().flatMap { listOf(it, it) } + "end")
+            val expectedValues = (0..numInputReads).toList().flatMap { listOf(it, it) } + "end"
+            Assert.assertEqualsNoOrder(values.toTypedArray(), expectedValues.toTypedArray())
         }
     }
 
@@ -162,12 +162,13 @@ class LambdaCommandLineTest : BaseTestCase() {
             }
         })
 
-        val jobs = commandLine.executeCommandLine(detachedBuildApi)
-        Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
 
         runBlocking {
+            val jobs = commandLine.executeCommandLine(detachedBuildApi)
+            Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
             val values = jobs.awaitAll()
-            Assert.assertEquals(values, (0..numInputReads).toList().flatMap { listOf(it, it) } + "end")
+            val expectedValues = (0..numInputReads).toList().flatMap { listOf(it, it) } + "end"
+            Assert.assertEqualsNoOrder(values.toTypedArray(), expectedValues.toTypedArray())
         }
     }
 
@@ -187,7 +188,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         })
 
         val generalCommandLine = LambdaCommandLine.createCommandLine(workingDirectory, runDetails)
-        Assert.assertEquals(generalCommandLine.exePath, "/usr/bin/sh")
+        Assert.assertEquals(generalCommandLine.exePath, "/bin/sh")
         Assert.assertEquals(generalCommandLine.workDirectory, workingDirectory)
         val env = System.getenv().toMutableMap()
         env.remove("JAVA_HOME")

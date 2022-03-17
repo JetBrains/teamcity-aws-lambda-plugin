@@ -4,45 +4,54 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger
 import com.intellij.execution.configurations.GeneralCommandLine
 import jetbrains.buildServer.runner.lambda.DetachedBuildApi
 import jetbrains.buildServer.runner.lambda.RunDetails
-import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.*
 import java.io.File
+import java.io.InputStream
 
 class LambdaCommandLine internal constructor(
     private val generalCommandLine: GeneralCommandLine,
     private val logger: LambdaLogger
 ) {
 
-    fun executeCommandLine(detachedBuildApi: DetachedBuildApi): List<Deferred<Any?>> {
+    suspend fun executeCommandLine(detachedBuildApi: DetachedBuildApi): MutableList<Deferred<Any?>> {
         val process = generalCommandLine.createProcess()
         val logJobs = mutableListOf<Deferred<Any?>>()
         logProcessOutput(process, logJobs, detachedBuildApi)
 
 
         logJobs.add(logProcessExitAsync(process, detachedBuildApi))
-        return logJobs.toList()
+        logJobs.awaitAll()
+        return logJobs
     }
 
-    private fun logProcessOutput(
+    private suspend fun logProcessOutput(
         process: Process,
         logJobs: MutableList<Deferred<Any?>>,
         detachedBuildApi: DetachedBuildApi
     ) {
-        val inputStream = process.inputStream
-        val inputStreamBuffer = ByteArray(8192)
-        var inputStreamSize = inputStream.read(inputStreamBuffer)
-        val errorStream = process.errorStream
-        val errorStreamBuffer = ByteArray(8192)
-        var errorStreamSize = errorStream.read(errorStreamBuffer)
+        val inputStreamJob = logOutputStream(process.inputStream, logJobs) {
+            detachedBuildApi.logAsync(it)
+        }
+        val errorStreamJob = logOutputStream(process.errorStream, logJobs) {
+            detachedBuildApi.logWarningAsync(it)
+        }
 
-        while (inputStreamSize != -1 || errorStreamSize != -1) {
-            if (inputStreamSize != -1) {
-                logJobs.add(detachedBuildApi.logAsync(inputStreamBuffer.decodeToString(0, inputStreamSize)))
-                inputStreamSize = inputStream.read(inputStreamBuffer)
-            }
+        inputStreamJob.join()
+        errorStreamJob.join()
+    }
 
-            if (errorStreamSize != -1) {
-                logJobs.add(detachedBuildApi.logWarningAsync(errorStreamBuffer.decodeToString(0, errorStreamSize)))
-                errorStreamSize = errorStream.read(errorStreamBuffer)
+    private fun logOutputStream(
+        stream: InputStream,
+        logJobs: MutableList<Deferred<Any?>>,
+        logCall: (String) -> Deferred<Any?>
+    ) = CoroutineScope(Dispatchers.IO).launch {
+        withContext(Dispatchers.IO) {
+            val buffer = ByteArray(8192)
+            var streamSize = stream.read(buffer)
+
+            while (streamSize != -1) {
+                logJobs.add(logCall(buffer.decodeToString(0, streamSize)))
+                streamSize = stream.read(buffer)
             }
         }
     }
@@ -78,7 +87,7 @@ class LambdaCommandLine internal constructor(
             val mergedEnvParams = mergeEnvParams(runDetails)
 
             generalCommandLine.apply {
-                exePath = "/usr/bin/sh"
+                exePath = "/bin/sh"
                 setWorkingDirectory(workingDirectory)
                 addParameter("${workingDirectory.absolutePath}/${runDetails.directoryId}/${runDetails.customScriptFilename}")
                 envParams = mergedEnvParams
