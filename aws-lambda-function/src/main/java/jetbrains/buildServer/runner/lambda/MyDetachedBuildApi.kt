@@ -62,14 +62,17 @@ class MyDetachedBuildApi(
         return stringBuilder.toString()
     }
 
-    override fun logAsync(serviceMessage: String?) =
-        CoroutineScope(dispatcher).async {
+    override fun logAsync(serviceMessage: String?): Deferred<Any?> {
+        val deferred = CoroutineScope(dispatcher).async {
             serviceMessage?.let {
                 client.post<Any>("$teamcityBuildRestApi/log") {
                     body = TextContent(serviceMessage, ContentType.Text.Plain)
                 }
             }
         }
+        deferred.start()
+        return deferred
+    }
 
     override fun logWarningAsync(message: String?): Deferred<Any?> = logAsync(
         getServiceMessage(

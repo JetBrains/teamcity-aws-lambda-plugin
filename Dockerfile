@@ -5,4 +5,7 @@ RUN yum -y install which
 COPY aws-lambda-function/build/classes/kotlin/main ${LAMBDA_TASK_ROOT}
 COPY aws-lambda-function/build/dependency/* ${LAMBDA_TASK_ROOT}/lib/
 
+# Gradle Specific Env Var
+ENV GRADLE_USER_HOME="/tmp"
+
 CMD [ "jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest" ]
