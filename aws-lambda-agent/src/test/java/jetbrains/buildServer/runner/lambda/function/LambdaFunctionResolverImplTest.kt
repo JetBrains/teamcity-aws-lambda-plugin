@@ -294,7 +294,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     publish = true
                     packageType = "Image"
                     memorySize = MEMORY_SIZE.toInt()
-                    timeout = LambdaConstants.MAX_TIMEOUT
+                    timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
                 })
             }
         })
@@ -367,7 +367,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     packageType = "Zip"
                     runtime = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
                     memorySize = MEMORY_SIZE.toInt()
-                    timeout = LambdaConstants.MAX_TIMEOUT
+                    timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
                 })
             }
         })

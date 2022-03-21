@@ -60,7 +60,7 @@ class LambdaFunctionResolverImpl(
                 packageType = "Zip"
                 runtime = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
                 memorySize = this@LambdaFunctionResolverImpl.memorySize
-                timeout = LambdaConstants.MAX_TIMEOUT
+                timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
             }
         } else {
             CreateFunctionRequest().apply {
@@ -72,7 +72,7 @@ class LambdaFunctionResolverImpl(
                 publish = true
                 packageType = "Image"
                 memorySize = this@LambdaFunctionResolverImpl.memorySize
-                timeout = LambdaConstants.MAX_TIMEOUT
+                timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
             }
         }
 

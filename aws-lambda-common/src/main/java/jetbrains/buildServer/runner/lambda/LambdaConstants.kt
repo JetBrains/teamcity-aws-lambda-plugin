@@ -53,7 +53,8 @@ object LambdaConstants {
     const val MAX_MEMORY_SIZE = 10240
     const val MEMORY_SIZE_VALUE_ERROR = "Memory size must be an integer value between ${MIN_MEMORY_SIZE}MB and ${MAX_MEMORY_SIZE}MB"
 
-    const val MAX_TIMEOUT = 900
+    const val LAMBDA_FUNCTION_MAX_TIMEOUT = 900
+    const val S3_URL_TIMEOUT_MINUTES = 5
 
     const val JETBRAINS_AWS_ACCOUNT_ID = "913206223978"
     const val DEFAULT_LAMBDA_RUNTIME = "java11"
