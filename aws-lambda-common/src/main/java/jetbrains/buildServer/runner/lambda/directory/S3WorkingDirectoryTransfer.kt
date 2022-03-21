@@ -8,7 +8,10 @@ import java.io.File
 import java.util.*
 
 
-class S3WorkingDirectoryTransfer(private val transferManager: TransferManager) :
+class S3WorkingDirectoryTransfer(
+    private val transferManager: TransferManager,
+    private val archiveManager: ArchiveManager
+) :
     WorkingDirectoryTransfer {
     private val bucketName = "$BUCKET_NAME-${transferManager.amazonS3Client.regionName}"
     private val s3Client = transferManager.amazonS3Client
@@ -36,16 +39,20 @@ class S3WorkingDirectoryTransfer(private val transferManager: TransferManager) :
             createBucket()
         }
 
+        val workingDirectoryTar = archiveManager.archiveDirectory(workingDirectory)
         val key = UUID.randomUUID().toString()
-        val multipleFileUpload = transferManager.uploadDirectory(bucketName, key, workingDirectory, true)
-        multipleFileUpload.waitForCompletion()
+        val upload = transferManager.upload(bucketName, key, workingDirectoryTar)
+        upload.waitForCompletion()
         return key
     }
 
     override fun retrieve(key: String, destinationDirectory: File): File {
-        val multiFileDownload = transferManager.downloadDirectory(bucketName, key, destinationDirectory)
+        val tempFile = kotlin.io.path.createTempFile().toFile()
+        val download = transferManager.download(bucketName, key, tempFile)
 
-        multiFileDownload.waitForCompletion()
+
+        download.waitForCompletion()
+        archiveManager.extractDirectory(tempFile, destinationDirectory)
         return destinationDirectory
     }
 }

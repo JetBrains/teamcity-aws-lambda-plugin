@@ -3,9 +3,9 @@ package jetbrains.buildServer.runner.lambda.directory
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.HeadBucketRequest
-import com.amazonaws.services.s3.transfer.MultipleFileDownload
-import com.amazonaws.services.s3.transfer.MultipleFileUpload
+import com.amazonaws.services.s3.transfer.Download
 import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.services.s3.transfer.Upload
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import org.jmock.Expectations
@@ -21,6 +21,8 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var transferManager: TransferManager
     private lateinit var amazonS3: AmazonS3
+    private lateinit var archiveManager: ArchiveManager
+    private lateinit var file: File
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -31,6 +33,8 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
         m.setThreadingPolicy(Synchroniser())
         transferManager = m.mock(TransferManager::class.java)
         amazonS3 = m.mock(AmazonS3::class.java)
+        archiveManager = m.mock(ArchiveManager::class.java)
+        file = m.mock(File::class.java, "TarFile")
 
         m.checking(object : Expectations() {
             init {
@@ -49,23 +53,34 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
         super.tearDown()
     }
 
+    private fun verifyDirectoryIsUploaded(workDirectory: File, upload: Upload) {
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(archiveManager).archiveDirectory(workDirectory)
+                will(returnValue(file))
+                oneOf(transferManager).upload(
+                    with(getBucketName()),
+                    with(any(String::class.java)),
+                    with(file)
+                )
+                will(returnValue(upload))
+                oneOf(upload).waitForCompletion()
+            }
+        })
+
+    }
+
     @Test
     fun testUpload() {
         val s3WorkingDirectoryTransfer = createClient()
-        val multipleFileUpload = m.mock(MultipleFileUpload::class.java)
+        val upload = m.mock(Upload::class.java)
         val workDirectory = m.mock(File::class.java)
 
         m.checking(object : Expectations() {
             init {
                 oneOf(amazonS3).headBucket(HeadBucketRequest(getBucketName()))
-                oneOf(transferManager).uploadDirectory(
-                    with(getBucketName()),
-                    with(any(String::class.java)),
-                    with(workDirectory),
-                    with(true)
-                )
-                will(returnValue(multipleFileUpload))
-                oneOf(multipleFileUpload).waitForCompletion()
+                verifyDirectoryIsUploaded(workDirectory, upload)
             }
         })
 
@@ -76,7 +91,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     @Test
     fun testUpload_NonExistingBucket() {
         val s3WorkingDirectoryTransfer = createClient()
-        val multipleFileUpload = m.mock(MultipleFileUpload::class.java)
+        val upload = m.mock(Upload::class.java)
         val workDirectory = m.mock(File::class.java)
         val amazonServiceException = m.mock(AmazonServiceException::class.java)
 
@@ -90,14 +105,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
                 oneOf(amazonS3).createBucket(getBucketName())
 
-                oneOf(transferManager).uploadDirectory(
-                    with(getBucketName()),
-                    with(any(String::class.java)),
-                    with(workDirectory),
-                    with(true)
-                )
-                will(returnValue(multipleFileUpload))
-                oneOf(multipleFileUpload).waitForCompletion()
+                verifyDirectoryIsUploaded(workDirectory, upload)
             }
         })
 
@@ -127,18 +135,19 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     @Test
     fun testRetrieve() {
         val s3WorkingDirectoryTransfer = createClient()
-        val multipleFileDownload = m.mock(MultipleFileDownload::class.java)
+        val download = m.mock(Download::class.java)
         val destinationDirectory = m.mock(File::class.java)
 
         m.checking(object : Expectations() {
             init {
-                oneOf(transferManager).downloadDirectory(
-                    getBucketName(),
-                    KEY,
-                    destinationDirectory
+                oneOf(transferManager).download(
+                    with(getBucketName()),
+                    with(KEY),
+                    with(any(File::class.java))
                 )
-                will(returnValue(multipleFileDownload))
-                oneOf(multipleFileDownload).waitForCompletion()
+                will(returnValue(download))
+                oneOf(download).waitForCompletion()
+                oneOf(archiveManager).extractDirectory(with(any(File::class.java)), with(destinationDirectory))
             }
         })
 
@@ -147,7 +156,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
     private fun getBucketName() = "${LambdaConstants.BUCKET_NAME}-$REGION_NAME"
 
-    private fun createClient() = S3WorkingDirectoryTransfer(transferManager)
+    private fun createClient() = S3WorkingDirectoryTransfer(transferManager, archiveManager)
 
 
     companion object {

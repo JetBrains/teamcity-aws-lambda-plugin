@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
@@ -30,7 +31,7 @@ class TasksRequestHandler : RequestStreamHandler {
         )
 
         try {
-            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager())
+            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager(), TarArchiveManager())
 
             val workingDirectory =
                 workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
@@ -39,6 +40,7 @@ class TasksRequestHandler : RequestStreamHandler {
                 LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
             }
         } catch (e: Throwable) {
+            context.logger.log("Exception during the execution: $e")
             runBlocking {
                 detachedBuildApi.failBuildAsync(e).await()
             }

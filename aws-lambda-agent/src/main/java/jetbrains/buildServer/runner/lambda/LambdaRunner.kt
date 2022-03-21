@@ -13,6 +13,7 @@ import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_P
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
 import jetbrains.buildServer.runner.lambda.function.ZipFunctionDownloader
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
@@ -25,7 +26,7 @@ class LambdaRunner : AgentBuildRunner {
             context,
             awsLambda,
             jacksonObjectMapper(),
-            S3WorkingDirectoryTransfer(getTransferManager(context)),
+            S3WorkingDirectoryTransfer(getTransferManager(context), TarArchiveManager()),
             UnixCommandLinePreparer(context),
             LambdaFunctionResolverImpl(
                 context,

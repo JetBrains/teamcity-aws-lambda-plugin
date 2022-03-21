@@ -89,7 +89,7 @@ class LambdaCommandLine internal constructor(
             generalCommandLine.apply {
                 exePath = "/bin/sh"
                 setWorkingDirectory(workingDirectory)
-                addParameter("${workingDirectory.absolutePath}/${runDetails.directoryId}/${runDetails.customScriptFilename}")
+                addParameter("${workingDirectory.absolutePath}/${runDetails.customScriptFilename}")
                 envParams = mergedEnvParams
             }
             return generalCommandLine

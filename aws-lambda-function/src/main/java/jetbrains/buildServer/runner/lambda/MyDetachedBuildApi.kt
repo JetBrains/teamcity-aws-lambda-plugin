@@ -19,7 +19,6 @@ class MyDetachedBuildApi(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) :
     DetachedBuildApi {
-
     private val client = HttpClient(engine) {
         install(Logging) {
             logger = object : Logger {
@@ -90,7 +89,7 @@ class MyDetachedBuildApi(
     }
 
     override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> {
-        val descriptionEntry = Pair("description", exception.localizedMessage)
+        val descriptionEntry = Pair("description", exception.message ?: exception.toString())
         val params = if (errorId == null) {
             mapOf(
                 descriptionEntry
