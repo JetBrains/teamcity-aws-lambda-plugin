@@ -57,6 +57,7 @@ object LambdaConstants {
     const val S3_URL_TIMEOUT_MINUTES = 5
 
     const val JETBRAINS_AWS_ACCOUNT_ID = "913206223978"
+    const val AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     const val DEFAULT_LAMBDA_RUNTIME = "java11"
     const val S3_CODE_FUNCTION_URL = "https://teamcity-lambda-runner.s3.eu-central-1.amazonaws.com/aws-lambda-function-all.jar"
     const val LAMBDA_ARN_NAME = "teamcity-lambda-runner"

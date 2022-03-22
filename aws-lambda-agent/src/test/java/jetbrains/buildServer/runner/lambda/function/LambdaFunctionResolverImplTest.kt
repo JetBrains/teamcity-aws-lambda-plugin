@@ -2,7 +2,6 @@ package jetbrains.buildServer.runner.lambda.function
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
-import com.amazonaws.services.identitymanagement.model.GetPolicyRequest
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.BaseTestCase
@@ -180,9 +179,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
     private fun mockRoleExistingLogic() {
         m.checking(object : Expectations() {
             init {
-                oneOf(iam).getPolicy(GetPolicyRequest().apply {
-                    policyArn = POLICY_ARN
-                })
                 oneOf(iam).getRole(GetRoleRequest().apply {
                     roleName = LambdaConstants.LAMBDA_ARN_NAME
                 })
@@ -231,19 +227,10 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
     private fun mockRoleNotExistingLogic() {
         m.checking(object : Expectations() {
             init {
-                oneOf(iam).getPolicy(GetPolicyRequest().apply {
-                    policyArn = POLICY_ARN
-                })
-                will(throwException(NoSuchEntityException("mock")))
                 oneOf(iam).getRole(GetRoleRequest().apply {
                     roleName = LambdaConstants.LAMBDA_ARN_NAME
                 })
                 will(throwException(NoSuchEntityException("mock")))
-
-                oneOf(iam).createPolicy(CreatePolicyRequest().apply {
-                    policyName = LambdaConstants.LAMBDA_ARN_NAME
-                    policyDocument  = LambdaFunctionResolver.ARN_POLICY
-                })
 
                 oneOf(iam).createRole(CreateRoleRequest().apply {
                     roleName = LambdaConstants.LAMBDA_ARN_NAME
@@ -252,7 +239,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
 
                 oneOf(iam).attachRolePolicy(AttachRolePolicyRequest().apply {
                     roleName = LambdaConstants.LAMBDA_ARN_NAME
-                    policyArn = POLICY_ARN
+                    policyArn = LambdaConstants.AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY
                 })
             }
         })
@@ -379,7 +366,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
         const val MEMORY_SIZE = "512"
         const val ECR_IMAGE_URI = "ecrImageUri"
         const val USER_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:user"
-        const val POLICY_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:policy/${LambdaConstants.LAMBDA_ARN_NAME}"
         const val ROLE_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
     }
 }

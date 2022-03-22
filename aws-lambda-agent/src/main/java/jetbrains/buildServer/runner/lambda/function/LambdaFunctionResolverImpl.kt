@@ -2,8 +2,10 @@ package jetbrains.buildServer.runner.lambda.function
 
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import com.amazonaws.services.identitymanagement.model.*
-import com.amazonaws.services.identitymanagement.model.GetPolicyRequest
+import com.amazonaws.services.identitymanagement.model.AttachRolePolicyRequest
+import com.amazonaws.services.identitymanagement.model.CreateRoleRequest
+import com.amazonaws.services.identitymanagement.model.GetRoleRequest
+import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.agent.BuildRunnerContext
@@ -108,30 +110,19 @@ class LambdaFunctionResolverImpl(
     private fun resolveRoleArn(): String {
         val arn = iam.user.user.arn
         val accountId = arn.substring(LambdaConstants.IAM_PREFIX.length + 2, arn.indexOf(":user"))
-        val lambdaPolicyArn = "${LambdaConstants.IAM_PREFIX}::$accountId:policy/${LambdaConstants.LAMBDA_ARN_NAME}"
         val lambdaRoleArn = "${LambdaConstants.IAM_PREFIX}::$accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
-
-        if (!policyExists(lambdaPolicyArn)) {
-            val createPolicyRequest = CreatePolicyRequest().apply {
-                policyName = LambdaConstants.LAMBDA_ARN_NAME
-                policyDocument = LambdaFunctionResolver.ARN_POLICY
-            }
-
-            iam.createPolicy(createPolicyRequest)
-        }
 
         if (!roleExists()) {
             val createRoleRequest = CreateRoleRequest().apply {
                 roleName = LambdaConstants.LAMBDA_ARN_NAME
                 assumeRolePolicyDocument = LambdaFunctionResolver.ROLE_POLICY_DOCUMENT
-
             }
 
             iam.createRole(createRoleRequest)
 
             val attachPolicyRequest = AttachRolePolicyRequest().apply {
                 roleName = LambdaConstants.LAMBDA_ARN_NAME
-                policyArn = lambdaPolicyArn
+                policyArn = LambdaConstants.AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY
             }
 
             iam.attachRolePolicy(attachPolicyRequest)
@@ -150,17 +141,6 @@ class LambdaFunctionResolverImpl(
     } catch (e: NoSuchEntityException) {
         false
     }
-
-    private fun policyExists(policyArn: String): Boolean =
-        try {
-            val getPolicyRequest = GetPolicyRequest().apply {
-                setPolicyArn(policyArn)
-            }
-            iam.getPolicy(getPolicyRequest)
-            true
-        } catch (e: NoSuchEntityException) {
-            false
-        }
 
     companion object {
         const val MAX_TRIES = 10
