@@ -1,7 +1,5 @@
 package jetbrains.buildServer.runner.lambda.function
 
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import com.amazonaws.services.identitymanagement.model.*
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.BaseTestCase
@@ -21,9 +19,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
     private lateinit var m: Mockery
     private lateinit var context: BuildRunnerContext
     private lateinit var awsLambda: AWSLambda
-    private lateinit var iam: AmazonIdentityManagement
-    private lateinit var userResult: GetUserResult
-    private lateinit var user: User
     private lateinit var awsLambdaException: AWSLambdaException
     private lateinit var resourceNotFoundException: ResourceNotFoundException
     private lateinit var functionDownloader: FunctionDownloader
@@ -37,28 +32,12 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
         m.setThreadingPolicy(Synchroniser())
         context = m.mock(BuildRunnerContext::class.java)
         awsLambda = m.mock(AWSLambda::class.java)
-        iam = m.mock(AmazonIdentityManagement::class.java)
-        userResult = m.mock(GetUserResult::class.java)
-        user = m.mock(User::class.java)
         awsLambdaException = m.mock(AWSLambdaException::class.java)
         resourceNotFoundException = m.mock(ResourceNotFoundException::class.java)
         functionDownloader = m.mock(FunctionDownloader::class.java)
     }
 
-    private fun mockIamLogic() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(iam).user
-                will(returnValue(userResult))
-                oneOf(userResult).user
-                will(returnValue(user))
-                oneOf(user).arn
-                will(returnValue(USER_ARN))
-            }
-        })
-    }
-
-    private fun mockImage(): String {
+    private fun mockRunnerParameters(): String {
         val lambdaFunctionName = "${LambdaConstants.FUNCTION_NAME}-$ECR_IMAGE_URI"
         m.checking(object : Expectations(){
             init {
@@ -67,7 +46,8 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     returnValue(
                         mapOf(
                             Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
-                            Pair(LambdaConstants.ECR_IMAGE_URI_PARAM, ECR_IMAGE_URI)
+                            Pair(LambdaConstants.ECR_IMAGE_URI_PARAM, ECR_IMAGE_URI),
+                            Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE_ARN)
                         )
                     )
                 )
@@ -87,6 +67,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     returnValue(
                         mapOf(
                             Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
+                            Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE_ARN)
                         )
                     )
                 )
@@ -104,7 +85,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
 
     @Test
     fun testResolveFunction(){
-        val lambdaFunctionName = mockImage()
+        val lambdaFunctionName = mockRunnerParameters()
         m.checking(object : Expectations(){
             init {
                 oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
@@ -137,7 +118,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
 
     @Test
     fun testResolveFunction_LocalFunction(){
-        val lambdaFunctionName = mockImage()
+        val lambdaFunctionName = mockRunnerParameters()
         m.checking(object : Expectations(){
             init {
                 oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
@@ -176,15 +157,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
         Assert.assertEquals(functionName, lambdaFunctionName)
     }
 
-    private fun mockRoleExistingLogic() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(iam).getRole(GetRoleRequest().apply {
-                    roleName = LambdaConstants.LAMBDA_ARN_NAME
-                })
-            }
-        })
-    }
 
     private fun mockAwaitFunctionCreation(lambaFunctionName: String){
         m.checking(object : Expectations(){
@@ -202,7 +174,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
 
     @Test
     fun testResolveFunction_FunctionNotFound(){
-        val lambdaFunctionName = mockImage()
+        val lambdaFunctionName = mockRunnerParameters()
         m.checking(object : Expectations(){
             init {
                 oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
@@ -213,8 +185,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
             }
         })
 
-        mockIamLogic()
-        mockRoleExistingLogic()
 
         expectCreateFunction(lambdaFunctionName)
         mockAwaitFunctionCreation(lambdaFunctionName)
@@ -224,30 +194,10 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
         Assert.assertEquals(functionName, lambdaFunctionName)
     }
 
-    private fun mockRoleNotExistingLogic() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(iam).getRole(GetRoleRequest().apply {
-                    roleName = LambdaConstants.LAMBDA_ARN_NAME
-                })
-                will(throwException(NoSuchEntityException("mock")))
-
-                oneOf(iam).createRole(CreateRoleRequest().apply {
-                    roleName = LambdaConstants.LAMBDA_ARN_NAME
-                    assumeRolePolicyDocument = LambdaFunctionResolver.ROLE_POLICY_DOCUMENT
-                })
-
-                oneOf(iam).attachRolePolicy(AttachRolePolicyRequest().apply {
-                    roleName = LambdaConstants.LAMBDA_ARN_NAME
-                    policyArn = LambdaConstants.AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY
-                })
-            }
-        })
-    }
 
     @Test
     fun testResolveFunction_FunctionNotFound_RoleNotFound(){
-        val lambdaFunctionName = mockImage()
+        val lambdaFunctionName = mockRunnerParameters()
         m.checking(object : Expectations(){
             init {
                 oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
@@ -258,8 +208,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
             }
         })
 
-        mockIamLogic()
-        mockRoleNotExistingLogic()
 
         expectCreateFunction(lambdaFunctionName)
         mockAwaitFunctionCreation(lambdaFunctionName)
@@ -277,7 +225,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                     code = FunctionCode().apply {
                         imageUri = ECR_IMAGE_URI
                     }
-                    role = ROLE_ARN
+                    role = IAM_ROLE_ARN
                     publish = true
                     packageType = "Image"
                     memorySize = MEMORY_SIZE.toInt()
@@ -301,8 +249,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
             }
         })
 
-        mockIamLogic()
-        mockRoleExistingLogic()
 
         expectCreateFunctionWithDefaultImage(lambdaFunctionName)
         mockAwaitFunctionCreation(lambdaFunctionName)
@@ -326,8 +272,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
             }
         })
 
-        mockIamLogic()
-        mockRoleNotExistingLogic()
 
         expectCreateFunctionWithDefaultImage(lambdaFunctionName)
         mockAwaitFunctionCreation(lambdaFunctionName)
@@ -349,7 +293,7 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
                         zipFile = codeBuffer
                         handler = LambdaConstants.FUNCTION_HANDLER
                     }
-                    role = ROLE_ARN
+                    role = IAM_ROLE_ARN
                     publish = true
                     packageType = "Zip"
                     runtime = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
@@ -360,12 +304,11 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
         })
     }
 
-    private fun createClient() = LambdaFunctionResolverImpl(context, awsLambda, iam, functionDownloader)
+    private fun createClient() = LambdaFunctionResolverImpl(context, awsLambda, functionDownloader)
 
     companion object {
         const val MEMORY_SIZE = "512"
         const val ECR_IMAGE_URI = "ecrImageUri"
-        const val USER_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:user"
-        const val ROLE_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
+        const val IAM_ROLE_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
     }
 }

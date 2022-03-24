@@ -1,8 +1,6 @@
 package jetbrains.buildServer.runner.lambda
 
 import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder
 import com.amazonaws.services.s3.transfer.TransferManager
@@ -31,7 +29,6 @@ class LambdaRunner : AgentBuildRunner {
             LambdaFunctionResolverImpl(
                 context,
                 awsLambda,
-                getIamClient(context),
                 ZipFunctionDownloader(LambdaConstants.S3_CODE_FUNCTION_URL)
             )
         )
@@ -61,14 +58,6 @@ class LambdaRunner : AgentBuildRunner {
         withAWSClients<TransferManager, Exception>(context.runnerParameters) { clients ->
             TransferManagerBuilder.standard()
                 .withS3Client(clients.createS3Client())
-                .build()
-        }
-
-    private fun getIamClient(context: BuildRunnerContext) =
-        withAWSClients<AmazonIdentityManagement, Exception>(context.runnerParameters) { clients ->
-            AmazonIdentityManagementClientBuilder.standard()
-                .withClientConfiguration(clients.clientConfiguration)
-                .withCredentials(getCredentialsProvider(context.runnerParameters))
                 .build()
         }
 
