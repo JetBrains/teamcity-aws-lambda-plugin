@@ -16,7 +16,7 @@
 
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
-<%@include file="paramsConstants.jspf"%>
+<%@include file="paramsConstants.jspf" %>
 
 <jsp:include page="editAWSCommonParams.jsp">
     <jsp:param name="requireRegion" value="${true}"/>
@@ -27,15 +27,16 @@
 <l:settingsGroup title="Lambda Settings">
     <tr data-steps="${lambda_settings_step}">
         <th><label for="${endpoint_url_param}">${endpoint_url_label}: </label></th>
-        <td><props:textProperty name="${endpoint_url_param}" className="longField" />
-            <span class="smallNote">${endpoint_url_note}</span><span class="error" id="error_${endpoint_url_param}"></span>
+        <td><props:textProperty name="${endpoint_url_param}" className="longField"/>
+            <span class="smallNote">${endpoint_url_note}</span><span class="error"
+                                                                     id="error_${endpoint_url_param}"></span>
 
         </td>
     </tr>
 
     <tr data-steps="${lambda_settings_step}">
         <th><label for="${ecr_image_param}">${ecr_image_label}: </label></th>
-        <td><props:textProperty name="${ecr_image_param}" className="longField" />
+        <td><props:textProperty name="${ecr_image_param}" className="longField"/>
             <span class="smallNote">${ecr_image_note}</span><span class="error" id="error_${ecr_image_param}"></span>
 
         </td>
@@ -43,9 +44,21 @@
 
     <tr data-steps="${lambda_settings_step}">
         <th><label for="${memory_size_param}">${memory_size_label}: <l:star/></label></th>
-        <td><props:textProperty name="${memory_size_param}" className="longField" />
-            <span class="smallNote">${memory_size_note}</span><span class="error" id="error_${memory_size_param}"></span>
+        <td><props:textProperty name="${memory_size_param}" className="longField"/>
+            <span class="smallNote">${memory_size_note}</span><span class="error"
+                                                                    id="error_${memory_size_param}"></span>
 
+        </td>
+    </tr>
+
+    <tr data-steps="${lambda_settings_step}">
+        <th><label for="${iam_role_param}">${iam_role_label}: <l:star/></label></th>
+        <td>
+            <props:selectProperty name="${iam_role_param}" id="${iam_role_param}" className="longField">
+                <props:option value="${null}">${iam_role_default_option}</props:option>
+            </props:selectProperty>
+            <span class="smallNote">${iam_role_note}</span><span class="error"
+                                                                 id="error_${iam_role_param}"></span>
         </td>
     </tr>
 
@@ -54,9 +67,69 @@
             <label for="${script_content_param}">${script_content_label}:<l:star/></label>
         </th>
         <td class="codeHighlightTD">
-            <props:multilineProperty name="${script_content_param}" className="longField" cols="58" rows="10" expanded="true" linkTitle="Enter build script content"
+            <props:multilineProperty name="${script_content_param}" className="longField" cols="58" rows="10"
+                                     expanded="true" linkTitle="Enter build script content"
                                      note="${script_content_note}"
-                                     highlight="shell" />
+                                     highlight="shell"/>
         </td>
     </tr>
 </l:settingsGroup>
+
+<script type="text/javascript">
+
+    $j(document).ready(function () {
+
+        const keyId = BS.Util.escapeId('aws.access.key.id');
+        const keySecret = BS.Util.escapeId('secure:aws.secret.access.key');
+        const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
+
+        function addOptionToSelector(selector, value, text) {
+            return selector.append($j("<option data-title></option>").attr("value", value).text(text));
+        }
+
+
+        function drawRolesOptions(rolesList) {
+            addOptionToSelector(iamRoleInput, "${iam_role_default_option}", "${iam_role_default_option}")
+            const rolesWithoutDefault = rolesList.iamRoleList.filter(role => role.roleArn.indexOf(rolesList.defaultRole.roleArn) === -1)
+
+            if (rolesList.defaultRole) {
+                addOptionToSelector(iamRoleInput, rolesList.defaultRole.roleArn, rolesList.defaultRole.roleName)
+            }
+
+            rolesWithoutDefault.forEach(role =>
+                addOptionToSelector(iamRoleInput, role.roleArn, role.roleName)
+            )
+        }
+
+        function getParameters() {
+            const buildRunnerParams = BS.EditBuildRunnerForm.serializeParameters();
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+
+            return `id=` + urlParams.get('id') + '&' + buildRunnerParams
+        }
+
+        function loadIamRoles() {
+            const parameters = getParameters();
+            $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
+                .then(function (response) {
+                    const rolesList = $(response)
+                    iamRoleInput.empty()
+
+                    drawRolesOptions(rolesList)
+                })
+                .catch(error => {
+                    if (error.status !== 403) {
+                        throw error
+                    }
+                })
+        }
+
+        loadIamRoles()
+
+
+        $j(document).on('change', keyId + ', ' + keySecret, function () {
+            loadIamRoles()
+        });
+    })
+</script>

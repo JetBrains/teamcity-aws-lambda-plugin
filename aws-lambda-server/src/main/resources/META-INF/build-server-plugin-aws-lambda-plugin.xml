@@ -21,4 +21,5 @@
        default-autowire="constructor">
 
     <bean id="lambdaRunnerRunType" class="jetbrains.buildServer.runner.lambda.LambdaRunType"/>
+    <bean class="jetbrains.buildServer.runner.lambda.web.LambdaIamRolesListController"/>
 </beans>

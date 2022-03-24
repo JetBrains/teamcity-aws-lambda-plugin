@@ -32,6 +32,13 @@
 <c:set var="memory_size_label" value="<%=LambdaConstants.MEMORY_SIZE_LABEL%>"/>
 <c:set var="memory_size_note" value="<%=LambdaConstants.MEMORY_SIZE_NOTE%>"/>
 <c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
+<c:set var="iam_role_param" value="<%=LambdaConstants.IAM_ROLE_PARAM%>"/>
+<c:set var="iam_role_label" value="<%=LambdaConstants.IAM_ROLE_LABEL%>"/>
+<c:set var="iam_role_note" value="<%=LambdaConstants.IAM_ROLE_NOTE%>"/>
+<c:set var="iam_role_default_option" value="<%=LambdaConstants.IAM_ROLE_SELECT_OPTION%>"/>
+
+<c:set var="plugin_path" value="<%=LambdaConstants.LAMBDA_PLUGIN_PATH%>"/>
+<c:set var="iam_roles_list_path" value="<%=LambdaConstants.IAM_ROLES_LIST_PATH%>"/>
 
 
 

@@ -22,6 +22,8 @@ dependencies {
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     compile 'commons-validator:commons-validator:1.7'
+    compile 'com.amazonaws:aws-java-sdk-iam:1.12.173'
+    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1'
 }
 
 sourceCompatibility = "1.8"

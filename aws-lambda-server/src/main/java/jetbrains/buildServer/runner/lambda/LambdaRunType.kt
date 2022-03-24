@@ -1,5 +1,8 @@
 package jetbrains.buildServer.runner.lambda
 
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
+import com.intellij.openapi.diagnostic.Logger
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_HTML
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_JSP
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DESCR
@@ -27,6 +30,7 @@ class LambdaRunType(
     private val myViewEditParamsPath: String = registerController(VIEW_PARAMS_JSP, VIEW_PARAMS_HTML)
 
     init {
+        Logger.getInstance(LambdaRunType::class.java).debug("INITIALIZING RUN TYPE")
         registry.registerRunType(this)
     }
 
@@ -41,7 +45,14 @@ class LambdaRunType(
         return resolvedHtmlPath
     }
 
-    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor()
+    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor {
+        AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(it) { clients ->
+            AmazonIdentityManagementClientBuilder.standard()
+                .withClientConfiguration(clients.clientConfiguration)
+                .withCredentials(AWSCommonParams.getCredentialsProvider(it))
+                .build()
+        }
+    }
 
     override fun getEditRunnerParamsJspFilePath(): String = myEditParamsPath
 

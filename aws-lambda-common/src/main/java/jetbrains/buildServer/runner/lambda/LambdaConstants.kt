@@ -4,14 +4,17 @@ object LambdaConstants {
     const val RUNNER_TYPE = "aws.lambda"
     const val RUNNER_DISPLAY_NAME = "AWS Lambda"
     const val RUNNER_DESCR = "Run your Build Task using AWS Lambda"
-
-
     const val FUNCTION_NAME = "TeamcityLambdaRunner"
+
+
     const val BUCKET_NAME = "teamcity-lambda-runner-bucket"
     const val EDIT_PARAMS_JSP = "editLambdaParams.jsp"
     const val EDIT_PARAMS_HTML = "editLambdaParams.html"
     const val VIEW_PARAMS_JSP = "viewLambdaParams.jsp"
     const val VIEW_PARAMS_HTML = "viewLambdaParams.html"
+    const val LAMBDA_PLUGIN_PATH = "/plugins/aws-lambda-plugin"
+    const val IAM_ROLES_LIST_PATH = "iam/list.html"
+    const val IAM_ROLES_CREATE_PATH = "iam"
 
 
     const val USERNAME_SYSTEM_PROPERTY = "system.teamcity.auth.userId"
@@ -52,6 +55,14 @@ object LambdaConstants {
     const val MIN_MEMORY_SIZE = 128
     const val MAX_MEMORY_SIZE = 10240
     const val MEMORY_SIZE_VALUE_ERROR = "Memory size must be an integer value between ${MIN_MEMORY_SIZE}MB and ${MAX_MEMORY_SIZE}MB"
+
+    const val IAM_ROLE_PARAM = "lambda.iam.role.arn"
+    const val IAM_ROLE_LABEL = "Lambda IAM Role ARN"
+    const val IAM_ROLE_NOTE =
+        "The ARN Role for executing the lambda function."
+    const val IAM_ROLE_ERROR = "IAM Role must be specified"
+    const val IAM_ROLE_INVALID_ERROR = "Specified IAM Role does not exist"
+    const val IAM_ROLE_SELECT_OPTION = "-- Select IAM Role --"
 
     const val LAMBDA_FUNCTION_MAX_TIMEOUT = 900
     const val S3_URL_TIMEOUT_MINUTES = 5

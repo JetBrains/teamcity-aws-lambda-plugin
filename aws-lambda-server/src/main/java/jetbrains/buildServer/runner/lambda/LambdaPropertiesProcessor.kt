@@ -1,5 +1,8 @@
 package jetbrains.buildServer.runner.lambda
 
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
+import com.amazonaws.services.identitymanagement.model.GetRoleRequest
+import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.PropertiesProcessor
 import jetbrains.buildServer.util.CollectionsUtil
@@ -7,11 +10,14 @@ import jetbrains.buildServer.util.StringUtil
 import jetbrains.buildServer.util.amazon.AWSCommonParams
 import org.apache.commons.validator.routines.UrlValidator
 
-class LambdaPropertiesProcessor : PropertiesProcessor {
+class LambdaPropertiesProcessor(private val getIamClient: (Map<String, String>) -> AmazonIdentityManagement) :
+    PropertiesProcessor {
     override fun process(properties: MutableMap<String, String>): MutableCollection<InvalidProperty> {
         val invalids = mutableMapOf<String, String>()
 
         invalids.putAll(AWSCommonParams.validate(properties, false))
+
+        val awsValidationFailed = invalids.isNotEmpty()
 
         val endpointUrl = properties[LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM]
         if (StringUtil.isNotEmpty(endpointUrl) && !UrlValidator(UrlValidator.ALLOW_LOCAL_URLS).isValid(endpointUrl)) {
@@ -28,8 +34,41 @@ class LambdaPropertiesProcessor : PropertiesProcessor {
                 LambdaConstants.MEMORY_SIZE_VALUE_ERROR
         }
 
+        val iamRole = properties[LambdaConstants.IAM_ROLE_PARAM]
+        when {
+            iamRole == null -> invalids[LambdaConstants.IAM_ROLE_PARAM] = LambdaConstants.IAM_ROLE_ERROR
+            iamRole == LambdaConstants.IAM_ROLE_SELECT_OPTION -> invalids[LambdaConstants.IAM_ROLE_PARAM] =
+                LambdaConstants.IAM_ROLE_ERROR
+            !awsValidationFailed && !isValidIam(properties, iamRole) -> invalids[LambdaConstants.IAM_ROLE_PARAM] =
+                LambdaConstants.IAM_ROLE_INVALID_ERROR
+        }
+
         return CollectionsUtil.convertCollection(invalids.entries) { source ->
             InvalidProperty(source.key, source.value)
         }
+    }
+
+    private fun isValidIam(properties: MutableMap<String, String>, iamRole: String): Boolean {
+        val iam = getIamClient(properties)
+
+        val iamRoleName = getRoleName(iam, iamRole)
+        val roleRequest = GetRoleRequest().apply {
+            roleName = iamRoleName
+        }
+
+        return try {
+            iam.getRole(roleRequest)
+            true
+        } catch (e: NoSuchEntityException) {
+            false
+        }
+    }
+
+    private fun getRoleName(iam: AmazonIdentityManagement, iamRole: String): String {
+        val arn = iam.user.user.arn
+        val accountId = arn.substring(LambdaConstants.IAM_PREFIX.length + 2, arn.indexOf(":user"))
+        val roleArnPrefix = "${LambdaConstants.IAM_PREFIX}::$accountId:role/"
+
+        return iamRole.substring(roleArnPrefix.length)
     }
 }
