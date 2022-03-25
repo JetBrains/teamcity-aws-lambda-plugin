@@ -10,7 +10,8 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import kotlinx.coroutines.*
-
+import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class MyDetachedBuildApi(
     runDetails: RunDetails,
@@ -43,6 +44,44 @@ class MyDetachedBuildApi(
 
     private val teamcityBuildRestApi =
         "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
+    private val outputStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
+    private val errorStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
+    private var buildHasFinished = false
+    private val outputStreamJob = CoroutineScope(Dispatchers.IO).launch {
+        while (!buildHasFinished) {
+            if (outputStreamMessageQueue.isNotEmpty()) {
+                val message = buildMessages(outputStreamMessageQueue)
+                logMessage(message).join()
+                delay(DELAY_MILLISECONDS)
+            }
+        }
+    }
+
+    private val errorStreamJob = CoroutineScope(Dispatchers.IO).launch {
+        while (!buildHasFinished) {
+            if (errorStreamMessageQueue.isNotEmpty()) {
+                val message = buildMessages(outputStreamMessageQueue)
+                val serviceMessage = getServiceMessage(
+                    "message",
+                    mapOf(
+                        Pair("text", message),
+                        Pair("status", "WARNING")
+                    )
+                )
+                logMessage(serviceMessage).join()
+                delay(DELAY_MILLISECONDS)
+            }
+        }
+    }
+
+    private fun buildMessages(messageQueue: Queue<String>): String {
+        val builder = StringBuilder()
+        while (messageQueue.isNotEmpty()) {
+            builder.append(messageQueue.poll())
+        }
+
+        return builder.toString()
+    }
 
     private fun escapeValue(value: String) = value
         .replace("|", "||")
@@ -61,34 +100,38 @@ class MyDetachedBuildApi(
         return stringBuilder.toString()
     }
 
-    override fun logAsync(serviceMessage: String?): Deferred<Any?> {
-        val deferred = CoroutineScope(dispatcher).async {
-            serviceMessage?.let {
-                client.post<Any>("$teamcityBuildRestApi/log") {
-                    body = TextContent(serviceMessage, ContentType.Text.Plain)
-                }
-            }
+    override fun log(serviceMessage: String?) {
+        serviceMessage?.let {
+            outputStreamMessageQueue.add(it)
         }
-        deferred.start()
-        return deferred
     }
 
-    override fun logWarningAsync(message: String?): Deferred<Any?> = logAsync(
-        getServiceMessage(
-            "message",
-            mapOf(
-                Pair("text", message ?: ""),
-                Pair("status", "WARNING")
+    private fun logMessage(serviceMessage: String) =
+        CoroutineScope(dispatcher).launch {
+
+            client.post<Any>("$teamcityBuildRestApi/log") {
+                body = TextContent(serviceMessage, ContentType.Text.Plain)
+            }
+        }
+
+
+    override fun logWarning(message: String?) {
+        message?.let {
+            errorStreamMessageQueue.add(
+                it
             )
-        )
-    )
+        }
+    }
 
 
     override suspend fun finishBuild() {
+        buildHasFinished = true
+        outputStreamJob.join()
+        errorStreamJob.join()
         client.put<Any>("$teamcityBuildRestApi/finish")
     }
 
-    override fun failBuildAsync(exception: Throwable, errorId: String?): Deferred<Any?> {
+    override fun failBuild(exception: Throwable, errorId: String?): Job {
         val descriptionEntry = Pair("description", exception.message ?: exception.toString())
         val params = if (errorId == null) {
             mapOf(
@@ -100,6 +143,11 @@ class MyDetachedBuildApi(
                 Pair("identity", errorId)
             )
         }
-        return logAsync(getServiceMessage("buildProblem", params))
+        return logMessage(getServiceMessage("buildProblem", params))
+    }
+
+    companion object {
+        private const val DELAY_MILLISECONDS = 1000L
     }
 }
+

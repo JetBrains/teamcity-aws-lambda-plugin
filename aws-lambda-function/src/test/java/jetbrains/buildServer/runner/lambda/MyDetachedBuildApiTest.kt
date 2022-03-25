@@ -68,7 +68,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.logAsync(SERVICE_MESSAGE).await()
+            detachedBuildApi.log(SERVICE_MESSAGE)
         }
     }
 
@@ -102,7 +102,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.failBuildAsync(ProcessFailedException(DESCRIPTION)).await()
+            detachedBuildApi.failBuild(ProcessFailedException(DESCRIPTION))
         }
     }
 
@@ -120,7 +120,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.failBuildAsync(ProcessFailedException(DESCRIPTION), ERROR_ID).await()
+            detachedBuildApi.failBuild(ProcessFailedException(DESCRIPTION), ERROR_ID)
         }
     }
 
@@ -138,7 +138,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 )
             }
             val detachedBuildApi = createClient()
-            detachedBuildApi.logWarningAsync(MESSAGE).await()
+            detachedBuildApi.logWarning(MESSAGE)
         }
     }
 

@@ -1,13 +1,13 @@
 package jetbrains.buildServer.runner.lambda
 
-import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 
 interface DetachedBuildApi {
-    fun logAsync(serviceMessage: String?): Deferred<Any?>
+    fun log(serviceMessage: String?)
 
-    fun logWarningAsync(message: String?) : Deferred<Any?>
+    fun logWarning(message: String?)
 
     suspend fun finishBuild()
 
-    fun failBuildAsync(exception: Throwable, errorId: String? = null): Deferred<Any?>
+    fun failBuild(exception: Throwable, errorId: String? = null): Job
 }

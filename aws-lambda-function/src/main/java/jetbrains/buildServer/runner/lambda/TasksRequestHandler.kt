@@ -43,7 +43,7 @@ class TasksRequestHandler : RequestStreamHandler {
         } catch (e: Throwable) {
             context.logger.log("Exception during the execution: $e")
             runBlocking {
-                detachedBuildApi.failBuildAsync(e).await()
+                detachedBuildApi.failBuild(e).join()
             }
         } finally {
             runBlocking {

@@ -5,14 +5,9 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.DetachedBuildApi
 import jetbrains.buildServer.runner.lambda.RunDetails
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
 import org.jmock.Mockery
-import org.jmock.api.Invocation
-import org.jmock.lib.action.CustomAction
 import org.jmock.lib.concurrent.Synchroniser
 import org.jmock.lib.legacy.ClassImposteriser
 import org.testng.Assert
@@ -79,20 +74,14 @@ class LambdaCommandLineTest : BaseTestCase() {
                 for (i in 0..numInputReads) {
                     oneOf(inputStream).read(with(any(ByteArray::class.java)))
                     will(returnValue(Random.nextInt(1, 5000)))
-                    oneOf(detachedBuildApi).logAsync(with(any(String::class.java)))
-                    will(object : CustomAction("Mock Async logging") {
-                        override fun invoke(invocation: Invocation?): Any {
-                            return GlobalScope.async { i }
-                        }
-                    })
+                    oneOf(detachedBuildApi).log(with(any(String::class.java)))
                 }
 
 
                 for (i in 0..numErrorReads) {
                     oneOf(errorStream).read(with(any(ByteArray::class.java)))
                     will(returnValue(Random.nextInt(1, 5000)))
-                    oneOf(detachedBuildApi).logWarningAsync(with(any(String::class.java)))
-                    will(getAsyncActionLogging(i))
+                    oneOf(detachedBuildApi).logWarning(with(any(String::class.java)))
                 }
 
                 oneOf(inputStream).read(with(any(ByteArray::class.java)))
@@ -101,17 +90,12 @@ class LambdaCommandLineTest : BaseTestCase() {
                 will(returnValue(-1))
                 oneOf(process).waitFor()
                 will(returnValue(0))
-                oneOf(detachedBuildApi).logAsync(with("Process finished with exit code 0\n"))
-                will(getAsyncActionLogging("end"))
+                oneOf(detachedBuildApi).log(with("Process finished with exit code 0\n"))
             }
         })
 
         runBlocking {
-            val jobs = commandLine.executeCommandLine(detachedBuildApi)
-            Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
-            val values = jobs.awaitAll()
-            val expectedValues = (0..numInputReads).toList().flatMap { listOf(it, it) } + "end"
-            Assert.assertEqualsNoOrder(values.toTypedArray(), expectedValues.toTypedArray())
+            commandLine.executeCommandLine(detachedBuildApi)
         }
     }
 
@@ -135,20 +119,14 @@ class LambdaCommandLineTest : BaseTestCase() {
                 for (i in 0..numInputReads) {
                     oneOf(inputStream).read(with(any(ByteArray::class.java)))
                     will(returnValue(Random.nextInt(1, 5000)))
-                    oneOf(detachedBuildApi).logAsync(with(any(String::class.java)))
-                    will(object : CustomAction("Mock Async logging") {
-                        override fun invoke(invocation: Invocation?): Any {
-                            return GlobalScope.async { i }
-                        }
-                    })
+                    oneOf(detachedBuildApi).log(with(any(String::class.java)))
                 }
 
 
                 for (i in 0..numErrorReads) {
                     oneOf(errorStream).read(with(any(ByteArray::class.java)))
                     will(returnValue(Random.nextInt(1, 5000)))
-                    oneOf(detachedBuildApi).logWarningAsync(with(any(String::class.java)))
-                    will(getAsyncActionLogging(i))
+                    oneOf(detachedBuildApi).logWarning(with(any(String::class.java)))
                 }
 
                 oneOf(inputStream).read(with(any(ByteArray::class.java)))
@@ -157,24 +135,13 @@ class LambdaCommandLineTest : BaseTestCase() {
                 will(returnValue(-1))
                 oneOf(process).waitFor()
                 will(returnValue(1))
-                oneOf(detachedBuildApi).failBuildAsync(ProcessFailedException(("Process finished with exit code 1\n")))
-                will(getAsyncActionLogging("end"))
+                oneOf(detachedBuildApi).failBuild(ProcessFailedException(("Process finished with exit code 1\n")))
             }
         })
 
 
         runBlocking {
-            val jobs = commandLine.executeCommandLine(detachedBuildApi)
-            Assert.assertEquals(jobs.size, numInputReads + numErrorReads + 3)
-            val values = jobs.awaitAll()
-            val expectedValues = (0..numInputReads).toList().flatMap { listOf(it, it) } + "end"
-            Assert.assertEqualsNoOrder(values.toTypedArray(), expectedValues.toTypedArray())
-        }
-    }
-
-    private fun getAsyncActionLogging(any: Any) = object : CustomAction("Mock Async logging") {
-        override fun invoke(invocation: Invocation?): Any {
-            return GlobalScope.async { any }
+            commandLine.executeCommandLine(detachedBuildApi)
         }
     }
 

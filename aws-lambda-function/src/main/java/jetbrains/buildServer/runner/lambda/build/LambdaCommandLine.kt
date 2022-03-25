@@ -13,27 +13,23 @@ class LambdaCommandLine internal constructor(
     private val logger: LambdaLogger
 ) {
 
-    suspend fun executeCommandLine(detachedBuildApi: DetachedBuildApi): MutableList<Deferred<Any?>> {
+    suspend fun executeCommandLine(detachedBuildApi: DetachedBuildApi) {
         val process = generalCommandLine.createProcess()
-        val logJobs = mutableListOf<Deferred<Any?>>()
-        logProcessOutput(process, logJobs, detachedBuildApi)
+        logProcessOutput(process, detachedBuildApi)
 
 
-        logJobs.add(logProcessExitAsync(process, detachedBuildApi))
-        logJobs.awaitAll()
-        return logJobs
+        logProcessExitAsync(process, detachedBuildApi)?.join()
     }
 
     private suspend fun logProcessOutput(
         process: Process,
-        logJobs: MutableList<Deferred<Any?>>,
         detachedBuildApi: DetachedBuildApi
     ) {
-        val inputStreamJob = logOutputStream(process.inputStream, logJobs) {
-            detachedBuildApi.logAsync(it)
+        val inputStreamJob = logOutputStream(process.inputStream) {
+            detachedBuildApi.log(it)
         }
-        val errorStreamJob = logOutputStream(process.errorStream, logJobs) {
-            detachedBuildApi.logWarningAsync(it)
+        val errorStreamJob = logOutputStream(process.errorStream) {
+            detachedBuildApi.logWarning(it)
         }
 
         inputStreamJob.join()
@@ -42,21 +38,20 @@ class LambdaCommandLine internal constructor(
 
     private fun logOutputStream(
         stream: InputStream,
-        logJobs: MutableList<Deferred<Any?>>,
-        logCall: (String) -> Deferred<Any?>
+        logCall: (String) -> Unit
     ) = CoroutineScope(Dispatchers.IO).launch {
         withContext(Dispatchers.IO) {
             val buffer = ByteArray(8192)
             var streamSize = stream.read(buffer)
 
             while (streamSize != -1) {
-                logJobs.add(logCall(buffer.decodeToString(0, streamSize)))
+                logCall(buffer.decodeToString(0, streamSize))
                 streamSize = stream.read(buffer)
             }
         }
     }
 
-    private fun logProcessExitAsync(process: Process, detachedBuildApi: DetachedBuildApi): Deferred<Any?> {
+    private fun logProcessExitAsync(process: Process, detachedBuildApi: DetachedBuildApi): Job? {
 
         val exitCode = process.waitFor()
         val exitMessage = "Process finished with exit code $exitCode\n"
@@ -64,9 +59,10 @@ class LambdaCommandLine internal constructor(
 
 
         return if (exitCode != 0) {
-            detachedBuildApi.failBuildAsync(ProcessFailedException(exitMessage))
+            detachedBuildApi.failBuild(ProcessFailedException(exitMessage))
         } else {
-            detachedBuildApi.logAsync(exitMessage)
+            detachedBuildApi.log(exitMessage)
+            null
         }
     }
 
