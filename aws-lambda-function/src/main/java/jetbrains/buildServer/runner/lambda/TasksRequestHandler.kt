@@ -38,6 +38,7 @@ class TasksRequestHandler : RequestStreamHandler {
 
             runBlocking {
                 LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
+                workingDirectory.deleteRecursively()
             }
         } catch (e: Throwable) {
             context.logger.log("Exception during the execution: $e")
