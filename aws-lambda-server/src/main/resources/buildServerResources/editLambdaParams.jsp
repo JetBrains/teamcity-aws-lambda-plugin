@@ -57,6 +57,7 @@
             <props:selectProperty name="${iam_role_param}" id="${iam_role_param}" className="longField">
                 <props:option value="${null}">${iam_role_default_option}</props:option>
             </props:selectProperty>
+            <i class="icon-magic" title="Create Default Execution Role" id="${iam_role_create_button}"></i>
             <span class="smallNote">${iam_role_note}</span><span class="error"
                                                                  id="error_${iam_role_param}"></span>
         </td>
@@ -82,6 +83,10 @@
         const keyId = BS.Util.escapeId('aws.access.key.id');
         const keySecret = BS.Util.escapeId('secure:aws.secret.access.key');
         const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
+        const createIamRoleButton = $j(BS.Util.escapeId('${iam_role_create_button}'));
+
+        let rolesList;
+
 
         function addOptionToSelector(selector, value, text) {
             return selector.append($j("<option data-title></option>").attr("value", value).text(text));
@@ -89,11 +94,13 @@
 
 
         function drawRolesOptions(rolesList) {
-            addOptionToSelector(iamRoleInput, "${iam_role_default_option}", "${iam_role_default_option}")
-            const rolesWithoutDefault = rolesList.iamRoleList.filter(role => role.roleArn.indexOf(rolesList.defaultRole.roleArn) === -1)
-
+            let rolesWithoutDefault
             if (rolesList.defaultRole) {
                 addOptionToSelector(iamRoleInput, rolesList.defaultRole.roleArn, rolesList.defaultRole.roleName)
+                rolesWithoutDefault = rolesList.iamRoleList.filter(role => role.roleArn.indexOf(rolesList.defaultRole.roleArn) === -1)
+            } else {
+                addOptionToSelector(iamRoleInput, "${iam_role_default_option}", "${iam_role_default_option}")
+                rolesWithoutDefault = rolesList.iamRoleList
             }
 
             rolesWithoutDefault.forEach(role =>
@@ -113,7 +120,7 @@
             const parameters = getParameters();
             $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
                 .then(function (response) {
-                    const rolesList = $(response)
+                    rolesList = $(response)
                     iamRoleInput.empty()
 
                     drawRolesOptions(rolesList)
@@ -131,5 +138,28 @@
         $j(document).on('change', keyId + ', ' + keySecret, function () {
             loadIamRoles()
         });
+
+        function createIamRole() {
+            const parameters = getParameters()
+            if (!rolesList.defaultRole) {
+                $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_create_path}', parameters)
+                    .then(function (response) {
+                        rolesList.defaultRole = $(response)
+                        iamRoleInput.empty()
+
+                        drawRolesOptions(rolesList)
+                    })
+                    .catch(error => {
+                        if (error.status !== 403) {
+                            throw error
+                        }
+                    })
+            }
+        }
+
+        createIamRoleButton.on('click', function () {
+            createIamRole()
+            return false
+        })
     })
 </script>

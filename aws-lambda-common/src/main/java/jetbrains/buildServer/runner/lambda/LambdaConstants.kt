@@ -14,7 +14,7 @@ object LambdaConstants {
     const val VIEW_PARAMS_HTML = "viewLambdaParams.html"
     const val LAMBDA_PLUGIN_PATH = "/plugins/aws-lambda-plugin"
     const val IAM_ROLES_LIST_PATH = "iam/list.html"
-    const val IAM_ROLES_CREATE_PATH = "iam"
+    const val IAM_ROLES_CREATE_PATH = "iam.html"
 
 
     const val USERNAME_SYSTEM_PROPERTY = "system.teamcity.auth.userId"
@@ -71,6 +71,6 @@ object LambdaConstants {
     const val AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     const val DEFAULT_LAMBDA_RUNTIME = "java11"
     const val S3_CODE_FUNCTION_URL = "https://teamcity-lambda-runner.s3.eu-central-1.amazonaws.com/aws-lambda-function-all.jar"
-    const val LAMBDA_ARN_NAME = "teamcity-lambda-runner"
+    const val DEFAULT_LAMBDA_ARN_NAME = "teamcity-lambda-runner"
     const val IAM_PREFIX = "arn:aws:iam"
 }

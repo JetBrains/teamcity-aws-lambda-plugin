@@ -309,6 +309,6 @@ class LambdaFunctionResolverImplTest: BaseTestCase(){
     companion object {
         const val MEMORY_SIZE = "512"
         const val ECR_IMAGE_URI = "ecrImageUri"
-        const val IAM_ROLE_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.LAMBDA_ARN_NAME}"
+        const val IAM_ROLE_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.DEFAULT_LAMBDA_ARN_NAME}"
     }
 }

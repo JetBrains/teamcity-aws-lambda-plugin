@@ -36,7 +36,7 @@ class LambdaIamRolesListController(
             }
 
             val roles = getRoles(iam).map { IamRole(it.arn, it.roleName) }
-            val defaultRole = roles.find { it.roleName.endsWith(LambdaConstants.LAMBDA_ARN_NAME) }
+            val defaultRole = roles.find { it.roleName.endsWith(LambdaConstants.DEFAULT_LAMBDA_ARN_NAME) }
 
             return IamRolesList(roles, defaultRole)
         } catch (e: AmazonIdentityManagementException) {
