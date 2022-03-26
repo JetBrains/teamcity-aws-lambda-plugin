@@ -14,6 +14,7 @@ class LambdaCommandLine internal constructor(
 ) {
 
     suspend fun executeCommandLine(detachedBuildApi: DetachedBuildApi) {
+        logger.log("Starting execution of task...")
         val process = generalCommandLine.createProcess()
         logProcessOutput(process, detachedBuildApi)
 

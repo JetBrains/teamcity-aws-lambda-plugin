@@ -21,11 +21,13 @@ class MyDetachedBuildApi(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) :
     DetachedBuildApi {
+    private val logger = context.logger
+
     private val client = HttpClient(engine) {
         install(Logging) {
             logger = object : Logger {
                 override fun log(message: String) {
-                    context.logger.log("$message\n")
+                    this@MyDetachedBuildApi.logger.log("$message\n")
                 }
             }
         }
@@ -102,7 +104,10 @@ class MyDetachedBuildApi(
 
         stringBuilder.append("]")
 
-        return stringBuilder.toString()
+        val serviceMessage = stringBuilder.toString()
+
+        logger.log("Built service message $serviceMessage")
+        return serviceMessage
     }
 
     override fun log(serviceMessage: String?) {
