@@ -117,6 +117,7 @@
         }
 
         function loadIamRoles() {
+            BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm)
             const parameters = getParameters();
             $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
                 .then(function (response) {
@@ -124,8 +125,10 @@
                     iamRoleInput.empty()
 
                     drawRolesOptions(rolesList)
+                    BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm)
                 })
                 .catch(error => {
+                    BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true)
                     if (error.status !== 403) {
                         throw error
                     }
@@ -141,6 +144,8 @@
 
         function createIamRole() {
             const parameters = getParameters()
+            createIamRoleButton.addClass('icon-spin')
+            BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm)
             if (!rolesList.defaultRole) {
                 $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_create_path}', parameters)
                     .then(function (response) {
@@ -148,11 +153,15 @@
                         iamRoleInput.empty()
 
                         drawRolesOptions(rolesList)
+                        BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm)
                     })
                     .catch(error => {
+                        BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true)
                         if (error.status !== 403) {
                             throw error
                         }
+                    }).always(() => {
+                        createIamRoleButton.removeClass('icon-spin')
                     })
             }
         }
