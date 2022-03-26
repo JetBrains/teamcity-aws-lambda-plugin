@@ -3,9 +3,10 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.services.lambda.runtime.Context
 import io.ktor.client.*
 import io.ktor.client.engine.*
-import io.ktor.client.features.auth.*
-import io.ktor.client.features.auth.providers.*
-import io.ktor.client.features.logging.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -38,7 +39,11 @@ class MyDetachedBuildApi(
                     BasicAuthCredentials(runDetails.username, runDetails.password)
                 }
             }
-
+        }
+        install(HttpRequestRetry) {
+            maxRetries = 5
+            exponentialDelay()
+            retryIf { _, response -> response.status == HttpStatusCode.RequestTimeout || response.status == HttpStatusCode.GatewayTimeout }
         }
     }
 
@@ -109,8 +114,8 @@ class MyDetachedBuildApi(
     private fun logMessage(serviceMessage: String) =
         CoroutineScope(dispatcher).launch {
 
-            client.post<Any>("$teamcityBuildRestApi/log") {
-                body = TextContent(serviceMessage, ContentType.Text.Plain)
+            client.post("$teamcityBuildRestApi/log") {
+                setBody(TextContent(serviceMessage, ContentType.Text.Plain))
             }
         }
 
@@ -128,7 +133,7 @@ class MyDetachedBuildApi(
         buildHasFinished = true
         outputStreamJob.join()
         errorStreamJob.join()
-        client.put<Any>("$teamcityBuildRestApi/finish")
+        client.put("$teamcityBuildRestApi/finish")
     }
 
     override fun failBuild(exception: Throwable, errorId: String?): Job {
