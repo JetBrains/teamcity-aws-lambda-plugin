@@ -3,11 +3,13 @@ package jetbrains.buildServer.runner.lambda.function
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import com.amazonaws.waiters.WaiterParameters
+import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 
 class LambdaFunctionResolverImpl(
     private val context: BuildRunnerContext,
+    private val logger: BuildProgressLogger,
     private val awsLambda: AWSLambda,
     private val functionDownloader: FunctionDownloader
 ) : LambdaFunctionResolver {
@@ -25,9 +27,10 @@ class LambdaFunctionResolverImpl(
         }
 
         try {
-            //TODO: Check Function Details: TW-75372
+            logger.message("Checking if function $lambdaFunctionName already exists...")
             val function = awsLambda.getFunction(getFunctionRequest)
-            function.configuration.lastUpdateStatus
+
+            logger.message("Function $lambdaFunctionName already exists, checking if configuration is updated...")
             if (doesFunctionConfigurationNeedUpdate(function)) {
                 updateFunctionConfiguration(lambdaFunctionName)
             }
@@ -48,7 +51,7 @@ class LambdaFunctionResolverImpl(
     }
 
     private fun updateFunctionContainer(functionImage: String, lambdaFunctionName: String) {
-        System.err.println("Updating function container")
+        logger.message("Function $lambdaFunctionName's container image is outdated, updating it")
         val updateFunctionCodeRequest = UpdateFunctionCodeRequest().apply {
             functionName = lambdaFunctionName
             imageUri = functionImage
@@ -66,7 +69,7 @@ class LambdaFunctionResolverImpl(
     private fun updateFunctionConfiguration(
         lambdaFunctionName: String
     ) {
-        System.err.println("Updating function config")
+        logger.message("Function $lambdaFunctionName's configuration is outdated, updating it")
         val updateFunctionConfigurationRequest = UpdateFunctionConfigurationRequest().apply {
             functionName = lambdaFunctionName
             role = iamRole
@@ -93,6 +96,7 @@ class LambdaFunctionResolverImpl(
 
 
     private fun createFunction(functionImageUri: String, lambdaFunctionName: String) {
+        logger.message("Function $lambdaFunctionName does not exist, creating it...")
         // TODO: Add logic for function versioning: TW-75371
         val createFunctionRequest = if (functionImageUri == defaultImage) {
             CreateFunctionRequest().apply {
@@ -124,6 +128,7 @@ class LambdaFunctionResolverImpl(
 
         awsLambda.createFunction(createFunctionRequest)
         awaitFunctionStatus(lambdaFunctionName)
+        logger.message("Function $lambdaFunctionName has been created successfully")
     }
 
     private fun awaitFunctionStatus(lambdaFunctionName: String) {

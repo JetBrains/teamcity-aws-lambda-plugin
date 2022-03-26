@@ -1,5 +1,6 @@
 package jetbrains.buildServer.runner.lambda.directory
 
+import MockLoggerObject.mockBuildLogger
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.HttpMethod
 import com.amazonaws.services.s3.AmazonS3
@@ -31,6 +32,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     private lateinit var amazonS3: AmazonS3
     private lateinit var archiveManager: ArchiveManager
     private lateinit var file: File
+    private lateinit var logger: Logger
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -43,6 +45,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
         amazonS3 = m.mock(AmazonS3::class.java)
         archiveManager = m.mock(ArchiveManager::class.java)
         file = m.mock(File::class.java, "TarFile")
+        logger = m.mockBuildLogger()
 
         m.checking(object : Expectations() {
             init {
@@ -201,7 +204,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
     private fun getBucketName() = "${LambdaConstants.BUCKET_NAME}-$REGION_NAME"
 
-    private fun createClient() = S3WorkingDirectoryTransfer(transferManager, archiveManager)
+    private fun createClient() = S3WorkingDirectoryTransfer(logger, transferManager, archiveManager)
 
 
     companion object {

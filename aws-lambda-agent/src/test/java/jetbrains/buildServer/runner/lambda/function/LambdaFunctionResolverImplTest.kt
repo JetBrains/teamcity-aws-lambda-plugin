@@ -6,8 +6,10 @@ import com.amazonaws.services.lambda.waiters.AWSLambdaWaiters
 import com.amazonaws.waiters.Waiter
 import com.amazonaws.waiters.WaiterParameters
 import jetbrains.buildServer.BaseTestCase
+import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -27,6 +29,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
     private lateinit var functionDownloader: FunctionDownloader
     private lateinit var waiters: AWSLambdaWaiters
     private lateinit var waiter: Waiter<GetFunctionRequest>
+    private lateinit var logger: BuildProgressLogger
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -42,6 +45,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         functionDownloader = m.mock(FunctionDownloader::class.java)
         waiters = m.mock(AWSLambdaWaiters::class.java)
         waiter = m.mock(Waiter::class.java) as Waiter<GetFunctionRequest>
+        logger = m.mockBuildLogger()
     }
 
     private fun mockRunnerParameters(): String {
@@ -512,7 +516,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         })
     }
 
-    private fun createClient() = LambdaFunctionResolverImpl(context, awsLambda, functionDownloader)
+    private fun createClient() = LambdaFunctionResolverImpl(context, logger, awsLambda, functionDownloader)
 
     companion object {
         const val MEMORY_SIZE = "512"

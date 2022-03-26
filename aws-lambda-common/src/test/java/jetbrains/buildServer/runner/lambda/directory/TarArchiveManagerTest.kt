@@ -1,18 +1,42 @@
 package jetbrains.buildServer.runner.lambda.directory
 
+import MockLoggerObject.mockBuildLogger
 import com.intellij.execution.configurations.GeneralCommandLine
 import jetbrains.buildServer.BaseTestCase
+import org.jmock.Mockery
+import org.jmock.lib.concurrent.Synchroniser
 import org.testng.Assert
+import org.testng.annotations.AfterMethod
+import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
 
 class TarArchiveManagerTest : BaseTestCase() {
+    private lateinit var m: Mockery
+    private lateinit var logger: Logger
+
+
+    @BeforeMethod
+    @Throws(Exception::class)
+    override fun setUp() {
+        super.setUp()
+        m = Mockery()
+        m.setThreadingPolicy(Synchroniser())
+        logger = m.mockBuildLogger()
+    }
+
+    @AfterMethod
+    @Throws(Exception::class)
+    public override fun tearDown() {
+        m.assertIsSatisfied()
+        super.tearDown()
+    }
 
     @Test
     fun testArchiveAndExtract() {
-        val archiveManager = TarArchiveManager()
+        val archiveManager = TarArchiveManager(logger)
         val directory = createDirectoryWithFile()
 
         val archive = archiveManager.archiveDirectory(directory)

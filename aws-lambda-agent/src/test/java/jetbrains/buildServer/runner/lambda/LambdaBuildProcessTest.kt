@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.BuildFinishedStatus
 import jetbrains.buildServer.agent.BuildParametersMap
+import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
+import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
@@ -33,6 +35,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var workingDirectory: File
     private lateinit var commandLinePreparer: CommandLinePreparer
     private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
+    private lateinit var logger: BuildProgressLogger
 
 
     @BeforeMethod
@@ -50,6 +53,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         workingDirectory = m.mock(File::class.java)
         commandLinePreparer = m.mock(CommandLinePreparer::class.java)
         lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
+        logger = m.mockBuildLogger()
 
         m.checking(object : Expectations() {
             init {
@@ -231,6 +235,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
 
     private fun createBuildProcess() = LambdaBuildProcess(
         context,
+        logger,
         awsLambda,
         objectMapper,
         workingDirectoryTransfer,

@@ -1,8 +1,10 @@
 package jetbrains.buildServer.runner.lambda.cmd
 
 import jetbrains.buildServer.BaseTestCase
+import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -18,6 +20,7 @@ import kotlin.io.path.createTempDirectory
 class UnixCommandLinePreparerTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var context: BuildRunnerContext
+    private lateinit var logger: BuildProgressLogger
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -27,6 +30,7 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
         context = m.mock(BuildRunnerContext::class.java)
+        logger = m.mockBuildLogger()
 
         m.checking(object : Expectations() {
             init {
@@ -93,7 +97,7 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
         writer.close()
     }
 
-    private fun createClient() = UnixCommandLinePreparer(context)
+    private fun createClient() = UnixCommandLinePreparer(context, logger)
 
     companion object {
         private const val PROJECT_NAME = "projectName"

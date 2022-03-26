@@ -12,8 +12,9 @@ import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermission
 
 
-class TarArchiveManager : ArchiveManager {
+class TarArchiveManager(private val logger: Logger) : ArchiveManager {
     override fun archiveDirectory(directory: File): File {
+        logger.message("Starting archival of directory $directory")
         val tarBall = kotlin.io.path.createTempFile().toFile()
 
         val output = TarArchiveOutputStream(GzipCompressorOutputStream(tarBall.outputStream()))
@@ -33,6 +34,8 @@ class TarArchiveManager : ArchiveManager {
 
         output.finish()
         output.close()
+
+        logger.message("Finished the archival of the directory")
         return tarBall
     }
 
@@ -54,6 +57,7 @@ class TarArchiveManager : ArchiveManager {
         if (tar == null || destinationDirectory == null) {
             return
         }
+        logger.message("Extracting tar archive $tar to $destinationDirectory")
 
         val input = TarArchiveInputStream(GzipCompressorInputStream(tar.inputStream()))
 

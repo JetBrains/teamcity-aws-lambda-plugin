@@ -15,6 +15,7 @@ import java.util.*
 
 
 class S3WorkingDirectoryTransfer(
+    private val logger: Logger,
     private val transferManager: TransferManager,
     private val archiveManager: ArchiveManager
 ) :
@@ -24,6 +25,7 @@ class S3WorkingDirectoryTransfer(
 
     private fun checkIfBucketExists(): Boolean =
         try {
+            logger.message("Checking if S3 bucket $bucketName already exists...")
             val headBucketRequest = HeadBucketRequest(bucketName)
             s3Client.headBucket(headBucketRequest)
             true
@@ -37,16 +39,20 @@ class S3WorkingDirectoryTransfer(
 
 
     private fun createBucket() {
+        logger.message("Bucket $bucketName does not exist, creating new now")
         s3Client.createBucket(bucketName)
     }
 
     override fun upload(workingDirectory: File): String {
+        logger.message("Uploading working directory $workingDirectory to S3 bucket")
         if (!checkIfBucketExists()) {
             createBucket()
         }
 
         val workingDirectoryTar = archiveManager.archiveDirectory(workingDirectory)
         val key = UUID.randomUUID().toString()
+
+        logger.message("Starting upload of working directory...")
         val upload = transferManager.upload(bucketName, key, workingDirectoryTar)
         upload.waitForCompletion()
 
@@ -57,6 +63,7 @@ class S3WorkingDirectoryTransfer(
 
         val url = s3Client.generatePresignedUrl(generatePresignedUrlRequest)
 
+        logger.message("Upload complete")
         return url.toString()
     }
 
@@ -66,12 +73,14 @@ class S3WorkingDirectoryTransfer(
     }
 
     override fun retrieve(url: String, destinationDirectory: File): File {
+        logger.message("Downloading working directory from S3 bucket")
         val tempFile = kotlin.io.path.createTempFile().toFile()
 
         val presignedUrlDownload = PresignedUrlDownloadRequest(URL(url))
         val download = transferManager.download(presignedUrlDownload, tempFile)
 
         download.waitForCompletion()
+        logger.message("Download complete")
         archiveManager.extractDirectory(tempFile, destinationDirectory)
         tempFile.deleteOnExit()
         return destinationDirectory

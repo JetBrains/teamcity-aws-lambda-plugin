@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,16 +23,23 @@ class TasksRequestHandler : RequestStreamHandler {
     private val objectMapper = jacksonObjectMapper()
 
     override fun handleRequest(input: InputStream, output: OutputStream, context: Context) {
+        val logger = object : Logger {
+            override fun message(message: String?) {
+                context.logger.log(message)
+            }
+        }
+
         val runDetails: RunDetails = objectMapper.readValue(input)
         val detachedBuildApi = MyDetachedBuildApi(
-            runDetails,
-            context,
-            CIO.create(),
-            newSingleThreadContext(MyDetachedBuildApi::class.toString())
+            runDetails, context, CIO.create(), newSingleThreadContext(MyDetachedBuildApi::class.toString())
         )
 
         try {
-            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(getTransferManager(), TarArchiveManager())
+            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(
+                logger, getTransferManager(), TarArchiveManager(
+                    logger
+                )
+            )
 
             val workingDirectory =
                 workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
@@ -52,7 +60,5 @@ class TasksRequestHandler : RequestStreamHandler {
         }
     }
 
-    private fun getTransferManager(): TransferManager =
-        TransferManagerBuilder.standard()
-            .build()
+    private fun getTransferManager(): TransferManager = TransferManagerBuilder.standard().build()
 }

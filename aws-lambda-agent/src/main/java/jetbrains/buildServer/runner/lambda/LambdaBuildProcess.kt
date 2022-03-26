@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.agent.BuildFinishedStatus
 import jetbrains.buildServer.agent.BuildProcess
+import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
@@ -14,10 +15,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
     private val context: BuildRunnerContext,
+    private val logger: BuildProgressLogger,
     private val awsLambda: AWSLambda,
     private val objectMapper: ObjectMapper,
     private val workingDirectoryTransfer: WorkingDirectoryTransfer,
-    private val unixCommandLinePreparer: CommandLinePreparer,
+    private val commandLinePreparer: CommandLinePreparer,
     private val lambdaFunctionResolver: LambdaFunctionResolver
 ) :
     BuildProcess {
@@ -26,14 +28,14 @@ class LambdaBuildProcess(
     private val myIsFinished: AtomicBoolean = AtomicBoolean()
 
     private fun executeTask(): BuildFinishedStatus {
-
         val projectName = context.buildParameters.systemProperties.getValue(LambdaConstants.TEAMCITY_PROJECT_NAME)
-        val scriptContentFilename = unixCommandLinePreparer.writeBuildScriptContent(projectName, context.workingDirectory)
+        val scriptContentFilename = commandLinePreparer.writeBuildScriptContent(projectName, context.workingDirectory)
         val directoryId = workingDirectoryTransfer.upload(context.workingDirectory)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
         val functionName = lambdaFunctionResolver.resolveFunction()
 
+        logger.message("Creating request for lambda function")
         val invokeRequest = InvokeRequest()
             .withFunctionName(functionName)
             .withInvocationType(InvocationType.Event)
@@ -43,6 +45,7 @@ class LambdaBuildProcess(
             return BuildFinishedStatus.INTERRUPTED
         }
 
+        logger.message("Adding request to event queue")
         awsLambda.invoke(invokeRequest)
         myIsFinished.set(true)
         return BuildFinishedStatus.FINISHED_DETACHED

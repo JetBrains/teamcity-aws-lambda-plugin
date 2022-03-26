@@ -10,6 +10,7 @@ import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
@@ -20,16 +21,25 @@ import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 class LambdaRunner : AgentBuildRunner {
     override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess {
         val awsLambda = getLambdaClient(context)
+        val logger = runningBuild.buildLogger
+        val genericLogger = object : Logger {
+            override fun message(message: String?) {
+                logger.message(message)
+            }
+        }
+
         return LambdaBuildProcess(
             context,
+            logger,
             awsLambda,
             jacksonObjectMapper(),
-            S3WorkingDirectoryTransfer(getTransferManager(context), TarArchiveManager()),
-            UnixCommandLinePreparer(context),
+            S3WorkingDirectoryTransfer(genericLogger, getTransferManager(context), TarArchiveManager(genericLogger)),
+            UnixCommandLinePreparer(context, logger),
             LambdaFunctionResolverImpl(
                 context,
+                logger,
                 awsLambda,
-                ZipFunctionDownloader(LambdaConstants.S3_CODE_FUNCTION_URL)
+                ZipFunctionDownloader(logger, LambdaConstants.S3_CODE_FUNCTION_URL),
             )
         )
     }
