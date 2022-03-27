@@ -58,8 +58,9 @@
                 <props:option value="${null}">${iam_role_default_option}</props:option>
             </props:selectProperty>
             <i class="icon-magic" title="Create Default Execution Role" id="${iam_role_create_button}"></i>
-            <span class="smallNote">${iam_role_note}</span><span class="error"
-                                                                 id="error_${iam_role_param}"></span>
+            <span class="smallNote">${iam_role_note}</span>
+            <span class="error"
+                  id="error_${iam_role_param}"></span>
         </td>
     </tr>
 
@@ -83,7 +84,9 @@
         const keyId = BS.Util.escapeId('aws.access.key.id');
         const keySecret = BS.Util.escapeId('secure:aws.secret.access.key');
         const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
+        const iamRoleError = $j(BS.Util.escapeId('error_${iam_role_param}'));
         const createIamRoleButton = $j(BS.Util.escapeId('${iam_role_create_button}'));
+
 
         let rolesList;
 
@@ -116,22 +119,31 @@
             return `id=` + urlParams.get('id') + '&' + buildRunnerParams
         }
 
+        function clearForms() {
+            iamRoleInput.empty()
+            iamRoleError.empty()
+        }
+
         function loadIamRoles() {
             BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm)
             const parameters = getParameters();
+            loadingChanges()
             $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
                 .then(function (response) {
                     rolesList = $(response)
-                    iamRoleInput.empty()
+                    clearForms();
 
                     drawRolesOptions(rolesList)
                     BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm)
                 })
                 .catch(error => {
+                    iamRoleError.text("Error getting the IAM Roles: " + error.responseText)
                     BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true)
                     if (error.status !== 403) {
                         throw error
                     }
+                }).always(() => {
+                    finishLoadingChanges();
                 })
         }
 
@@ -142,26 +154,43 @@
             loadIamRoles()
         });
 
+        function loadingChanges() {
+            createIamRoleButton
+                .removeClass('icon-magic')
+                .addClass("ring-loader-inline")
+                .addClass("progressRing")
+                .addClass("progressRingInline")
+        }
+
+        function finishLoadingChanges() {
+            createIamRoleButton
+                .removeClass("ring-loader-inline")
+                .removeClass("progressRing")
+                .removeClass("progressRingInline")
+                .addClass('icon-magic')
+        }
+
         function createIamRole() {
             const parameters = getParameters()
-            createIamRoleButton.addClass('icon-spin')
+            loadingChanges();
             BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm)
-            if (!rolesList.defaultRole) {
+            if (!rolesList?.defaultRole) {
                 $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_create_path}', parameters)
                     .then(function (response) {
                         rolesList.defaultRole = $(response)
-                        iamRoleInput.empty()
+                        clearForms()
 
                         drawRolesOptions(rolesList)
                         BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm)
                     })
                     .catch(error => {
+                        iamRoleError.text("Error creating the Default IAM Role: " + error.responseText)
                         BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true)
                         if (error.status !== 403) {
                             throw error
                         }
                     }).always(() => {
-                        createIamRoleButton.removeClass('icon-spin')
+                        finishLoadingChanges();
                     })
             }
         }

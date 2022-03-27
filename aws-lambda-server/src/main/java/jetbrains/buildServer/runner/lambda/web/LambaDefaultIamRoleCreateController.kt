@@ -2,10 +2,7 @@ package jetbrains.buildServer.runner.lambda.web
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
-import com.amazonaws.services.identitymanagement.model.AttachRolePolicyRequest
-import com.amazonaws.services.identitymanagement.model.CreateRoleRequest
-import com.amazonaws.services.identitymanagement.model.GetRoleRequest
-import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
+import com.amazonaws.services.identitymanagement.model.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
 import jetbrains.buildServer.serverSide.ProjectManager
@@ -27,14 +24,19 @@ class LambaDefaultIamRoleCreateController(
     )
 ) {
     override fun handle(request: HttpServletRequest, properties: Map<String, String>): IamRole {
-        val iam = AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
-            AmazonIdentityManagementClientBuilder.standard()
-                .withClientConfiguration(clients.clientConfiguration)
-                .withCredentials(AWSCommonParams.getCredentialsProvider(properties))
-                .build()
+        try {
+            val iam = AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
+                AmazonIdentityManagementClientBuilder.standard()
+                    .withClientConfiguration(clients.clientConfiguration)
+                    .withCredentials(AWSCommonParams.getCredentialsProvider(properties))
+                    .build()
+            }
+
+            return getRole(iam) ?: createRole(iam)
+        }catch (e: AmazonIdentityManagementException){
+            throw JsonControllerException(e.errorMessage, HttpStatus.valueOf(e.statusCode))
         }
 
-        return getRole(iam) ?: createRole(iam)
     }
 
     private fun createRole(iam: AmazonIdentityManagement): IamRole {
