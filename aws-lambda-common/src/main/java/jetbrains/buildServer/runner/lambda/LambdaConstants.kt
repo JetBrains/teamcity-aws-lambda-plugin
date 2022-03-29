@@ -16,6 +16,7 @@ object LambdaConstants {
     const val IAM_ROLES_LIST_PATH = "iam/list.html"
     const val IAM_ROLES_CREATE_PATH = "iam.html"
 
+    const val TIMEOUT_BUILD_PROBLEM_TYPE = "LAMBDA_TIMEOUT"
 
     const val USERNAME_SYSTEM_PROPERTY = "system.teamcity.auth.userId"
     const val PASSWORD_SYSTEM_PROPERTY = "system.teamcity.auth.password"
@@ -65,6 +66,7 @@ object LambdaConstants {
     const val IAM_ROLE_SELECT_OPTION = "-- Select IAM Role --"
 
     const val LAMBDA_FUNCTION_MAX_TIMEOUT = 900
+    const val LAMBDA_FUNCTION_MAX_TIMEOUT_LEEWAY = 300
     const val S3_URL_TIMEOUT_MINUTES = 5
 
     const val JETBRAINS_AWS_ACCOUNT_ID = "913206223978"
