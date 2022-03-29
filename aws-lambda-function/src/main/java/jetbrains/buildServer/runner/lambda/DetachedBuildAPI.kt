@@ -10,4 +10,8 @@ interface DetachedBuildApi {
     suspend fun finishBuild()
 
     fun failBuild(exception: Throwable, errorId: String? = null): Job
+
+    suspend fun startLogging()
+
+    suspend fun stopLogging()
 }

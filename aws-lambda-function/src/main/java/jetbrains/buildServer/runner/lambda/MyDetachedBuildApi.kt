@@ -19,8 +19,7 @@ class MyDetachedBuildApi(
     context: Context,
     engine: HttpClientEngine,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
-) :
-    DetachedBuildApi {
+) : DetachedBuildApi {
     private val logger = context.logger
 
     private val client = HttpClient(engine) {
@@ -49,8 +48,7 @@ class MyDetachedBuildApi(
         }
     }
 
-    private val teamcityBuildRestApi =
-        "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
+    private val teamcityBuildRestApi = "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
     private val outputStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
     private val errorStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
     private var buildHasFinished = false
@@ -58,10 +56,28 @@ class MyDetachedBuildApi(
         while (!buildHasFinished) {
             if (outputStreamMessageQueue.isNotEmpty()) {
                 val message = buildMessages(outputStreamMessageQueue)
-                logMessage(message).join()
+                val serviceMessage = getServiceMessage(
+                    "message", mapOf(
+                        Pair("text", message),
+                    )
+                )
+
+                logMessage(serviceMessage).join()
                 delay(DELAY_MILLISECONDS)
             }
         }
+    }
+
+    override suspend fun startLogging() {
+        val serviceMessage = getServiceMessage(
+            "blockOpened", mapOf(Pair("name", FLOW_ID_VALUE), Pair("description", "AWS Lambda Execution"))
+        )
+        logMessage(serviceMessage).join()
+    }
+
+    override suspend fun stopLogging() {
+        val serviceMessage = getServiceMessage("blockClosed", mapOf(Pair("name", FLOW_ID_VALUE)))
+        logMessage(serviceMessage).join()
     }
 
     private val errorStreamJob = CoroutineScope(Dispatchers.IO).launch {
@@ -69,10 +85,8 @@ class MyDetachedBuildApi(
             if (errorStreamMessageQueue.isNotEmpty()) {
                 val message = buildMessages(outputStreamMessageQueue)
                 val serviceMessage = getServiceMessage(
-                    "message",
-                    mapOf(
-                        Pair("text", message),
-                        Pair("status", "WARNING")
+                    "message", mapOf(
+                        Pair("text", message), Pair("status", "WARNING")
                     )
                 )
                 logMessage(serviceMessage).join()
@@ -90,17 +104,17 @@ class MyDetachedBuildApi(
         return builder.toString()
     }
 
-    private fun escapeValue(value: String) = value
-        .replace("|", "||")
-        .replace("'", "|'")
-        .replace("[", "|[")
-        .replace("]", "|]")
-        .replace("\n", "|\n")
+    private fun escapeValue(value: String) =
+        value.replace("|", "||").replace("'", "|'").replace("[", "|[").replace("]", "|]").replace("\n", "|\n")
 
     internal fun getServiceMessage(messageType: String, params: Map<String, String>): String {
+        val paramsWithFlow = mapOf(
+            Pair(FLOW_ID, FLOW_ID_VALUE)
+        ) + params
+
         val stringBuilder = StringBuilder("##teamcity[$messageType")
 
-        params.forEach { (key, value) -> stringBuilder.append(" $key='${escapeValue(value)}'") }
+        paramsWithFlow.forEach { (key, value) -> stringBuilder.append(" $key='${escapeValue(value)}'") }
 
         stringBuilder.append("]")
 
@@ -116,13 +130,12 @@ class MyDetachedBuildApi(
         }
     }
 
-    private fun logMessage(serviceMessage: String) =
-        CoroutineScope(dispatcher).launch {
+    private fun logMessage(serviceMessage: String) = CoroutineScope(dispatcher).launch {
 
-            client.post("$teamcityBuildRestApi/log") {
-                setBody(TextContent(serviceMessage, ContentType.Text.Plain))
-            }
+        client.post("$teamcityBuildRestApi/log") {
+            setBody(TextContent(serviceMessage, ContentType.Text.Plain))
         }
+    }
 
 
     override fun logWarning(message: String?) {
@@ -149,8 +162,7 @@ class MyDetachedBuildApi(
             )
         } else {
             mapOf(
-                descriptionEntry,
-                Pair("identity", errorId)
+                descriptionEntry, Pair("identity", errorId)
             )
         }
         return logMessage(getServiceMessage("buildProblem", params))
@@ -158,6 +170,8 @@ class MyDetachedBuildApi(
 
     companion object {
         private const val DELAY_MILLISECONDS = 1000L
+        private const val FLOW_ID = "flowId"
+        private const val FLOW_ID_VALUE = "AWS Lambda"
     }
 }
 

@@ -45,6 +45,7 @@ class TasksRequestHandler : RequestStreamHandler {
                 workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
 
             runBlocking {
+                detachedBuildApi.startLogging()
                 LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
                 workingDirectory.deleteRecursively()
             }
@@ -55,6 +56,7 @@ class TasksRequestHandler : RequestStreamHandler {
             }
         } finally {
             runBlocking {
+                detachedBuildApi.stopLogging()
                 detachedBuildApi.finishBuild()
             }
         }

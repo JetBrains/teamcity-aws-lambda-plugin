@@ -62,7 +62,10 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
                 Assert.assertEquals(request.method, HttpMethod.Post)
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
-                Assert.assertEquals((request.body as TextContent).text, SERVICE_MESSAGE)
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "#teamcity[$MESSAGE flowId='AWS Lambda' text='$SERVICE_MESSAGE')"
+                )
                 respond(
                     content = "",
                 )
@@ -89,14 +92,17 @@ class MyDetachedBuildApiTest : BaseTestCase() {
     }
 
     @Test
-    fun testFailBuildAsync(){
+    fun testFailBuild() {
         runBlocking {
             engine = MockEngine { request ->
                 Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
                 Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
                 Assert.assertEquals(request.method, HttpMethod.Post)
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
-                Assert.assertEquals((request.body as TextContent).text, "##teamcity[buildProblem description='$DESCRIPTION']")
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "##teamcity[buildProblem flowId='AWS Lambda' description='$DESCRIPTION']"
+                )
                 respond(
                     content = "",
                 )
@@ -107,14 +113,17 @@ class MyDetachedBuildApiTest : BaseTestCase() {
     }
 
     @Test
-    fun testFailBuildAsync_ErrorId(){
+    fun testFailBuild_ErrorId() {
         runBlocking {
             engine = MockEngine { request ->
                 Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
                 Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
                 Assert.assertEquals(request.method, HttpMethod.Post)
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
-                Assert.assertEquals((request.body as TextContent).text, "##teamcity[buildProblem description='$DESCRIPTION' identity='$ERROR_ID']")
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "##teamcity[buildProblem flowId='AWS Lambda' description='$DESCRIPTION' identity='$ERROR_ID']"
+                )
                 respond(
                     content = "",
                 )
@@ -125,14 +134,17 @@ class MyDetachedBuildApiTest : BaseTestCase() {
     }
 
     @Test
-    fun testLogWarningAsync(){
+    fun testLogWarning() {
         runBlocking {
             engine = MockEngine { request ->
                 Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
                 Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
                 Assert.assertEquals(request.method, HttpMethod.Post)
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
-                Assert.assertEquals((request.body as TextContent).text, "##teamcity[message text='$MESSAGE' status='WARNING']")
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "##teamcity[message flowId='AWS Lambda' text='$MESSAGE' status='WARNING']"
+                )
                 respond(
                     content = "",
                 )
@@ -143,13 +155,56 @@ class MyDetachedBuildApiTest : BaseTestCase() {
     }
 
     @Test
-    fun testGetServiceMessage_EscapedValues(){
-        engine = MockEngine{ respond("")}
+    fun testStartLogging() {
+        runBlocking {
+            engine = MockEngine { request ->
+                Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
+                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, TextContent::class.java)
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "##teamcity[blockOpened flowId='AWS Lambda' name='AWS Lambda' description='AWS Lambda Execution']"
+                )
+                respond(
+                    content = "",
+                )
+            }
+            val detachedBuildApi = createClient()
+            detachedBuildApi.startLogging()
+        }
+    }
+
+    @Test
+    fun testEndLogging() {
+        runBlocking {
+            engine = MockEngine { request ->
+                Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
+                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/log"))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, TextContent::class.java)
+                Assert.assertEquals(
+                    (request.body as TextContent).text,
+                    "##teamcity[blockClosed flowId='AWS Lambda' name='AWS Lambda']"
+                )
+                respond(
+                    content = "",
+                )
+            }
+            val detachedBuildApi = createClient()
+            detachedBuildApi.stopLogging()
+        }
+    }
+
+    @Test
+    fun testGetServiceMessage_EscapedValues() {
+        engine = MockEngine { respond("") }
         val detachedBuildApi = createClient()
         val params = mapOf(Pair(DESCRIPTION, ESCAPED_VALUES_MESSAGE))
         val serviceMessage = detachedBuildApi.getServiceMessage(MESSAGE, params)
 
-        val expectedServiceMessage = "##teamcity[$MESSAGE $DESCRIPTION='$EXPECTED_ESCAPED_VALUES_MESSAGE']"
+        val expectedServiceMessage =
+            "##teamcity[$MESSAGE flowId='AWS Lambda' $DESCRIPTION='$EXPECTED_ESCAPED_VALUES_MESSAGE']"
         Assert.assertEquals(serviceMessage, expectedServiceMessage)
     }
 
