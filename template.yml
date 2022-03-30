@@ -1,13 +1,25 @@
 Resources:
-  TeamcityLambdaRunner:
+  TeamcityLambdaRunnerGradle:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: "TeamcityLambdaRunner-java11"
+      FunctionName: "TeamcityLambdaRunner-gradle"
       PackageType: Image
       ImageConfig:
         Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
       MemorySize: 4098
       Timeout: 900
     Metadata:
-      Dockerfile: Dockerfile
+      Dockerfile: images/build/Dockerfile-gradle
+      DockerContext: .
+  TeamcityLambdaRunnerMaven:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "TeamcityLambdaRunner-maven"
+      PackageType: Image
+      ImageConfig:
+        Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
+      MemorySize: 4098
+      Timeout: 900
+    Metadata:
+      Dockerfile: images/build/Dockerfile-maven
       DockerContext: .

@@ -1,0 +1,2 @@
+# Gradle Specific Env Var
+ENV GRADLE_USER_HOME="/tmp"
