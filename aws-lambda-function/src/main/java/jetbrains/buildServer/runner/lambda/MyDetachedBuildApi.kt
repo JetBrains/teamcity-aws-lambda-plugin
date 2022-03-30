@@ -54,17 +54,42 @@ class MyDetachedBuildApi(
     private var buildHasFinished = false
     private val outputStreamJob = CoroutineScope(Dispatchers.IO).launch {
         while (!buildHasFinished) {
-            if (outputStreamMessageQueue.isNotEmpty()) {
-                val message = buildMessages(outputStreamMessageQueue)
-                val serviceMessage = getServiceMessage(
-                    "message", mapOf(
-                        Pair("text", message),
-                    )
-                )
+            processOutputStream()
+        }
+        processOutputStream()
+    }
 
-                logMessage(serviceMessage).join()
-                delay(DELAY_MILLISECONDS)
-            }
+    private val errorStreamJob = CoroutineScope(Dispatchers.IO).launch {
+        while (!buildHasFinished) {
+            processErrorStream()
+        }
+        processErrorStream()
+    }
+
+    private suspend fun processOutputStream() {
+        if (outputStreamMessageQueue.isNotEmpty()) {
+            val message = buildMessages(outputStreamMessageQueue)
+            val serviceMessage = getServiceMessage(
+                "message", mapOf(
+                    Pair("text", message),
+                )
+            )
+
+            logMessage(serviceMessage).join()
+            delay(DELAY_MILLISECONDS)
+        }
+    }
+
+    private suspend fun processErrorStream() {
+        if (errorStreamMessageQueue.isNotEmpty()) {
+            val message = buildMessages(errorStreamMessageQueue)
+            val serviceMessage = getServiceMessage(
+                "message", mapOf(
+                    Pair("text", message), Pair("status", "WARNING")
+                )
+            )
+            logMessage(serviceMessage).join()
+            delay(DELAY_MILLISECONDS)
         }
     }
 
@@ -80,21 +105,6 @@ class MyDetachedBuildApi(
         logMessage(serviceMessage).join()
     }
 
-    private val errorStreamJob = CoroutineScope(Dispatchers.IO).launch {
-        while (!buildHasFinished) {
-            if (errorStreamMessageQueue.isNotEmpty()) {
-                val message = buildMessages(outputStreamMessageQueue)
-                val serviceMessage = getServiceMessage(
-                    "message", mapOf(
-                        Pair("text", message), Pair("status", "WARNING")
-                    )
-                )
-                logMessage(serviceMessage).join()
-                delay(DELAY_MILLISECONDS)
-            }
-        }
-    }
-
     private fun buildMessages(messageQueue: Queue<String>): String {
         val builder = StringBuilder()
         while (messageQueue.isNotEmpty()) {
@@ -105,7 +115,8 @@ class MyDetachedBuildApi(
     }
 
     private fun escapeValue(value: String) =
-        value.replace("|", "||").replace("'", "|'").replace("[", "|[").replace("]", "|]").replace("\n", "|\n")
+        value.replace("|", "||").replace("'", "|'").replace("[", "|[").replace("]", "|]").replace("\n", "|n")
+            .replace("\r", "|r")
 
     internal fun getServiceMessage(messageType: String, params: Map<String, String>): String {
         val paramsWithFlow = mapOf(
@@ -131,7 +142,7 @@ class MyDetachedBuildApi(
     }
 
     private fun logMessage(serviceMessage: String) = CoroutineScope(dispatcher).launch {
-
+        logger.log("Sending message $serviceMessage...\n")
         client.post("$teamcityBuildRestApi/log") {
             setBody(TextContent(serviceMessage, ContentType.Text.Plain))
         }

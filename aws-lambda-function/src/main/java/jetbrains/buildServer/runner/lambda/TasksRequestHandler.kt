@@ -56,8 +56,8 @@ class TasksRequestHandler : RequestStreamHandler {
             }
         } finally {
             runBlocking {
-                detachedBuildApi.stopLogging()
                 detachedBuildApi.finishBuild()
+                detachedBuildApi.stopLogging()
             }
         }
     }

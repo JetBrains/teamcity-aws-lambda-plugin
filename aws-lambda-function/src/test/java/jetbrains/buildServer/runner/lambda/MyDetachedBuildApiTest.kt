@@ -224,7 +224,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         private const val DESCRIPTION = "description"
         private const val ERROR_ID = "errorId"
         private const val MESSAGE = "message"
-        private const val ESCAPED_VALUES_MESSAGE = "| ' [ ] \n"
-        private const val EXPECTED_ESCAPED_VALUES_MESSAGE = "|| |' |[ |] |\n"
+        private const val ESCAPED_VALUES_MESSAGE = "| ' [ ] \n \r"
+        private const val EXPECTED_ESCAPED_VALUES_MESSAGE = "|| |' |[ |] |n |r"
     }
 }
