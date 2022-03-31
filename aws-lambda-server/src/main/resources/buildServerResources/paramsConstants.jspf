@@ -21,20 +21,23 @@
 
 <c:set var="endpoint_url_param" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM%>"/>
 <c:set var="endpoint_url_label" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_LABEL%>"/>
-<c:set var="endpoint_url_note" value="<%=LambdaConstants.LAMBDA_ENDPOINT_URL_NOTE%>"/>
+<c:set var="endpoint_url_note"
+       value="Should your lambda function be executed through a different service endpoint URL than the default AWS one"/>
 <c:set var="script_content_param" value="<%=LambdaConstants.SCRIPT_CONTENT_PARAM%>"/>
-<c:set var="script_content_label" value="<%=LambdaConstants.SCRIPT_CONTENT_LABEL%>"/>
-<c:set var="script_content_note" value="<%=LambdaConstants.SCRIPT_CONTENT_NOTE%>"/>
+<c:set var="script_content_label" value="Custom Script:"/>
+<c:set var="script_content_note"
+       value="A Unix-like script, which will be executed as a shell script in a Unix-like environment."/>
 <c:set var="ecr_image_param" value="<%=LambdaConstants.ECR_IMAGE_URI_PARAM%>"/>
 <c:set var="ecr_image_label" value="<%=LambdaConstants.ECR_IMAGE_URI_LABEL%>"/>
-<c:set var="ecr_image_note" value="<%=LambdaConstants.ECR_IMAGE_URI_NOTE%>"/>
+<c:set var="ecr_image_note"
+       value="The location of the container image to use for your function. Must depend on the lambda function runner logic provided by JetBrains. Must be available through a private repository on the AWS Account"/>
 <c:set var="memory_size_param" value="<%=LambdaConstants.MEMORY_SIZE_PARAM%>"/>
 <c:set var="memory_size_label" value="<%=LambdaConstants.MEMORY_SIZE_LABEL%>"/>
-<c:set var="memory_size_note" value="<%=LambdaConstants.MEMORY_SIZE_NOTE%>"/>
+<c:set var="memory_size_note" value="Lambda memory size. Must be an integer value between 128MB and 10,240MB"/>
 <c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
 <c:set var="iam_role_param" value="<%=LambdaConstants.IAM_ROLE_PARAM%>"/>
 <c:set var="iam_role_label" value="<%=LambdaConstants.IAM_ROLE_LABEL%>"/>
-<c:set var="iam_role_note" value="<%=LambdaConstants.IAM_ROLE_NOTE%>"/>
+<c:set var="iam_role_note" value="The ARN Role for executing the lambda function."/>
 <c:set var="iam_role_default_option" value="<%=LambdaConstants.IAM_ROLE_SELECT_OPTION%>"/>
 <c:set var="iam_role_create_button" value="lambda.iam.role.create"/>
 

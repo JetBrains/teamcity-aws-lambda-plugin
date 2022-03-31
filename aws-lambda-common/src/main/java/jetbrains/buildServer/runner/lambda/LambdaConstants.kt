@@ -29,14 +29,9 @@ object LambdaConstants {
     const val LAMBDA_SETTINGS_STEP = "lambda_settings_settings"
     const val LAMBDA_ENDPOINT_URL_PARAM = "lambda.endpoint_url"
     const val LAMBDA_ENDPOINT_URL_LABEL = "Lambda Service Endpoint URL"
-    const val LAMBDA_ENDPOINT_URL_NOTE =
-        "Should your lambda function be executed through a different service endpoint URL than the default AWS one"
     const val LAMBDA_ENDPOINT_URL_ERROR = "$LAMBDA_ENDPOINT_URL_LABEL does not contain a valid URL"
 
     const val SCRIPT_CONTENT_PARAM = "lambda.script.content"
-    const val SCRIPT_CONTENT_LABEL = "Custom Script"
-    const val SCRIPT_CONTENT_NOTE =
-        "A Unix-like script, which will be executed as a shell script in a Unix-like environment."
     const val SCRIPT_CONTENT_ERROR = "Script content must be specified"
     const val SCRIPT_CONTENT_FILENAME = "teamcity-lambda-execution.sh"
     const val SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX =
@@ -44,14 +39,10 @@ object LambdaConstants {
 
     const val ECR_IMAGE_URI_PARAM = "lambda.ecr.image.uri"
     const val ECR_IMAGE_URI_LABEL = "ECR Docker Image Uri"
-    const val ECR_IMAGE_URI_NOTE =
-        "The location of the container image to use for your function. Must depend on the lambda function runner logic provided by JetBrains. Must be available through a private repository on the AWS Account"
     const val FUNCTION_HANDLER = "jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"
 
     const val MEMORY_SIZE_PARAM = "lambda.memory.size"
     const val MEMORY_SIZE_LABEL = "Lambda Memory Size"
-    const val MEMORY_SIZE_NOTE =
-        "Lambda memory size. Must be an integer value between 128MB and 10,240MB"
     const val MEMORY_SIZE_ERROR = "Memory size must be specified"
     const val MIN_MEMORY_SIZE = 128
     const val MAX_MEMORY_SIZE = 10240
@@ -59,8 +50,6 @@ object LambdaConstants {
 
     const val IAM_ROLE_PARAM = "lambda.iam.role.arn"
     const val IAM_ROLE_LABEL = "Lambda IAM Role ARN"
-    const val IAM_ROLE_NOTE =
-        "The ARN Role for executing the lambda function."
     const val IAM_ROLE_ERROR = "IAM Role must be specified"
     const val IAM_ROLE_INVALID_ERROR = "Specified IAM Role does not exist"
     const val IAM_ROLE_SELECT_OPTION = "-- Select IAM Role --"
