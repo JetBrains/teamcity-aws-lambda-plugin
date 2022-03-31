@@ -43,14 +43,13 @@ class S3WorkingDirectoryTransfer(
         s3Client.createBucket(bucketName)
     }
 
-    override fun upload(workingDirectory: File): String {
+    override fun upload(key: String, workingDirectory: File): String {
         logger.message("Uploading working directory $workingDirectory to S3 bucket")
         if (!checkIfBucketExists()) {
             createBucket()
         }
 
         val workingDirectoryTar = archiveManager.archiveDirectory(workingDirectory)
-        val key = UUID.randomUUID().toString()
 
         logger.message("Starting upload of working directory...")
         val upload = transferManager.upload(bucketName, key, workingDirectoryTar)

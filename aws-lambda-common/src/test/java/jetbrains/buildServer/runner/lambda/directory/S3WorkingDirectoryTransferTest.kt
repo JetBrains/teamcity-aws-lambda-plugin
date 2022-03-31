@@ -101,9 +101,9 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
                 oneOf(archiveManager).archiveDirectory(workDirectory)
                 will(returnValue(file))
                 oneOf(transferManager).upload(
-                    with(getBucketName()),
-                    with(any(String::class.java)),
-                    with(file)
+                    getBucketName(),
+                    UPLOAD_KEY,
+                    file
                 )
                 will(returnValue(upload))
                 oneOf(upload).waitForCompletion()
@@ -130,7 +130,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
             }
         })
 
-        val url = s3WorkingDirectoryTransfer.upload(workDirectory)
+        val url = s3WorkingDirectoryTransfer.upload(UPLOAD_KEY, workDirectory)
         Assert.assertEquals(url, MOCK_URL)
     }
 
@@ -156,7 +156,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
             }
         })
 
-        val url = s3WorkingDirectoryTransfer.upload(workDirectory)
+        val url = s3WorkingDirectoryTransfer.upload(UPLOAD_KEY, workDirectory)
         Assert.assertEquals(url, MOCK_URL)
     }
 
@@ -177,7 +177,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
             }
         })
 
-        val url = s3WorkingDirectoryTransfer.upload(workDirectory)
+        val url = s3WorkingDirectoryTransfer.upload(UPLOAD_KEY, workDirectory)
         Assert.assertEquals(url, MOCK_URL)
     }
 
@@ -210,5 +210,6 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     companion object {
         private const val REGION_NAME = "regionName"
         private const val MOCK_URL = "http://www.mockUrl.com"
+        private const val UPLOAD_KEY = "uploadKey"
     }
 }

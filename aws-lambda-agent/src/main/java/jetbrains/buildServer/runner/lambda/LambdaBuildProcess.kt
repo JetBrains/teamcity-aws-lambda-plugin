@@ -30,7 +30,8 @@ class LambdaBuildProcess(
     private fun executeTask(): BuildFinishedStatus {
         val projectName = context.buildParameters.systemProperties.getValue(LambdaConstants.TEAMCITY_PROJECT_NAME)
         val scriptContentFilename = commandLinePreparer.writeBuildScriptContent(projectName, context.workingDirectory)
-        val directoryId = workingDirectoryTransfer.upload(context.workingDirectory)
+        val key = getKey()
+        val directoryId = workingDirectoryTransfer.upload(key, context.workingDirectory)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
         val functionName = lambdaFunctionResolver.resolveFunction()
@@ -50,6 +51,9 @@ class LambdaBuildProcess(
         myIsFinished.set(true)
         return BuildFinishedStatus.FINISHED_DETACHED
     }
+
+    private fun getKey(): String =
+        "${context.build.buildTypeId}-${context.build.buildId}"
 
     private fun getRunDetails(directoryId: String, scriptContentFilename: String): RunDetails = RunDetails(
         username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),

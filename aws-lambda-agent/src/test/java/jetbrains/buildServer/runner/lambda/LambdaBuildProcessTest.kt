@@ -5,10 +5,7 @@ import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
-import jetbrains.buildServer.agent.BuildFinishedStatus
-import jetbrains.buildServer.agent.BuildParametersMap
-import jetbrains.buildServer.agent.BuildProgressLogger
-import jetbrains.buildServer.agent.BuildRunnerContext
+import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
@@ -36,6 +33,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var commandLinePreparer: CommandLinePreparer
     private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
     private lateinit var logger: BuildProgressLogger
+    private lateinit var build: AgentRunningBuild
 
 
     @BeforeMethod
@@ -54,6 +52,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         commandLinePreparer = m.mock(CommandLinePreparer::class.java)
         lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
         logger = m.mockBuildLogger()
+        build = m.mock(AgentRunningBuild::class.java)
 
         m.checking(object : Expectations() {
             init {
@@ -68,6 +67,13 @@ class LambdaBuildProcessTest : BaseTestCase() {
                         )
                     )
                 )
+
+                allowing(context).build
+                will(returnValue(build))
+                allowing(build).buildId
+                will(returnValue(BUILD_ID_LONG))
+                allowing(build).buildTypeId
+                will(returnValue(BUILD_TYPE_ID))
             }
         })
     }
@@ -113,7 +119,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(workingDirectoryTransfer).upload(workingDirectory)
+                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectory)
                 will(returnValue(DIRECTORY_ID))
                 oneOf(lambdaFunctionResolver).resolveFunction()
                 will(returnValue(FUNCTION_NAME))
@@ -181,7 +187,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(workingDirectoryTransfer).upload(workingDirectory)
+                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectory)
                 will(returnValue(DIRECTORY_ID))
                 oneOf(lambdaFunctionResolver).resolveFunction()
                 will(returnValue(FUNCTION_NAME))
@@ -254,5 +260,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val DIRECTORY_ID = "directoryId"
         private const val PROJECT_NAME = "projectName"
         private const val FUNCTION_NAME = "functionName"
+        private const val BUILD_ID_LONG = 1234L
+        private const val BUILD_TYPE_ID = "buildTypeId"
+        private const val UPLOAD_KEY = "$BUILD_TYPE_ID-$BUILD_ID_LONG"
     }
 }
