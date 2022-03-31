@@ -8,6 +8,6 @@ generate_image(){
   cat "$images_folder/Dockerfile-common" "$images_folder/Dockerfile-$image_name" > "$images_folder/build/Dockerfile-$image_name"
 }
 
-
 generate_image gradle
 generate_image maven
+generate_image node14

@@ -23,3 +23,15 @@ Resources:
     Metadata:
       Dockerfile: images/build/Dockerfile-maven
       DockerContext: .
+  TeamcityLambdaRunnerNode14:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "TeamcityLambdaRunner-node14"
+      PackageType: Image
+      ImageConfig:
+        Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
+      MemorySize: 4098
+      Timeout: 900
+    Metadata:
+      Dockerfile: images/build/Dockerfile-node14
+      DockerContext: .
