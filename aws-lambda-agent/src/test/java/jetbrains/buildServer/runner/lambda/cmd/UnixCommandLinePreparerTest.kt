@@ -60,20 +60,23 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
 
         val filename = unixCommandLinePreparer.writeBuildScriptContent(PROJECT_NAME, tempDir)
 
-        Assert.assertEquals(filename, "$PROJECT_NAME-${LambdaConstants.SCRIPT_CONTENT_FILENAME}")
+        Assert.assertEquals(filename, LambdaConstants.SCRIPT_CONTENT_FILENAME)
 
         val scriptFile = File("${tempDir.absolutePath}/$filename")
         Assert.assertTrue(scriptFile.exists())
 
         val content = String(Files.readAllBytes(scriptFile.toPath()))
-        Assert.assertEquals(content, LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + SCRIPT_CONTENT)
+        Assert.assertEquals(
+            content,
+            LambdaConstants.SCRIPT_CONTENT_HEADER + LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + SCRIPT_CONTENT
+        )
     }
 
     @Test
     fun testWriteBuildScriptContent_ExistingFile() {
         val unixCommandLinePreparer = createClient()
         val tempDir = createTempDirectory().toFile()
-        val outputName = "$PROJECT_NAME-${LambdaConstants.SCRIPT_CONTENT_FILENAME}"
+        val outputName = LambdaConstants.SCRIPT_CONTENT_FILENAME
 
         writeToFile(tempDir, outputName)
 
@@ -85,7 +88,10 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
         Assert.assertTrue(scriptFile.exists())
 
         val content = String(Files.readAllBytes(scriptFile.toPath()))
-        Assert.assertEquals(content, LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + SCRIPT_CONTENT)
+        Assert.assertEquals(
+            content,
+            LambdaConstants.SCRIPT_CONTENT_HEADER + LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + SCRIPT_CONTENT
+        )
     }
 
     private fun writeToFile(tempDir: File, outputName: String) {
