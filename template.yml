@@ -35,3 +35,15 @@ Resources:
     Metadata:
       Dockerfile: images/build/Dockerfile-node14
       DockerContext: .
+  TeamcityLambdaRunnerPython310:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "TeamcityLambdaRunner-python3-10"
+      PackageType: Image
+      ImageConfig:
+        Command: ["jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest"]
+      MemorySize: 4098
+      Timeout: 900
+    Metadata:
+      Dockerfile: images/build/Dockerfile-python3_10
+      DockerContext: .
