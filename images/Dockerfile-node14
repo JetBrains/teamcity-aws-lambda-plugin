@@ -1,4 +1,4 @@
-RUN yum -y install tar gzip xz
+RUN apt-get install -y curl gpg xz-utils
 
 ENV NODE_VERSION 14.19.1
 ARG ARCH='x64'

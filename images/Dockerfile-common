@@ -1,8 +1,11 @@
-FROM public.ecr.aws/lambda/java:11
+FROM openjdk:11-slim-buster
 
-RUN yum -y install which
+ENV LAMBDA_TASK_ROOT /function
+
+RUN apt-get update
 
 COPY aws-lambda-function/build/classes/kotlin/main ${LAMBDA_TASK_ROOT}
 COPY aws-lambda-function/build/dependency/* ${LAMBDA_TASK_ROOT}/lib/
 
+ENTRYPOINT [ "/usr/local/openjdk-11/bin/java", "-cp", "/function/:/function/lib/*", "com.amazonaws.services.lambda.runtime.api.client.AWSLambda" ]
 CMD [ "jetbrains.buildServer.runner.lambda.TasksRequestHandler::handleRequest" ]

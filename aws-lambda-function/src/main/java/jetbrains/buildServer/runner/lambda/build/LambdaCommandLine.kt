@@ -84,7 +84,7 @@ class LambdaCommandLine internal constructor(
             val mergedEnvParams = mergeEnvParams(runDetails)
 
             generalCommandLine.apply {
-                exePath = "/bin/sh"
+                exePath = "/bin/bash"
                 setWorkingDirectory(workingDirectory)
                 addParameter("${workingDirectory.absolutePath}/${runDetails.customScriptFilename}")
                 envParams = mergedEnvParams

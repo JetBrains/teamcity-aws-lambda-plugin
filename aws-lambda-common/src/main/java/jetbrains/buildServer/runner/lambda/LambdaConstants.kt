@@ -34,6 +34,7 @@ object LambdaConstants {
     const val SCRIPT_CONTENT_PARAM = "lambda.script.content"
     const val SCRIPT_CONTENT_ERROR = "Script content must be specified"
     const val SCRIPT_CONTENT_FILENAME = "teamcity-lambda-execution.sh"
+    const val SCRIPT_CONTENT_HEADER = "#!/bin/bash\n"
     const val SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX =
         "directory=\$(echo \$(dirname \$0) | cut -d ' ' -f1);cd \${directory[0]};\n"
 
