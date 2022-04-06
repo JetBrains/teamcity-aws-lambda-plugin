@@ -81,7 +81,7 @@ class S3WorkingDirectoryTransfer(
         download.waitForCompletion()
         logger.message("Download complete")
         archiveManager.extractDirectory(tempFile, destinationDirectory)
-        tempFile.deleteOnExit()
+        tempFile.delete()
         return destinationDirectory
     }
 }
