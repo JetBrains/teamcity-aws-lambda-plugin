@@ -3,8 +3,6 @@ package jetbrains.buildServer.runner.lambda.directory
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import org.apache.commons.compress.utils.IOUtils
 import java.io.File
 import java.io.IOException
@@ -17,7 +15,7 @@ class TarArchiveManager(private val logger: Logger) : ArchiveManager {
         logger.message("Starting archival of directory $directory")
         val tarBall = kotlin.io.path.createTempFile().toFile()
 
-        val output = TarArchiveOutputStream(GzipCompressorOutputStream(tarBall.outputStream()))
+        val output = TarArchiveOutputStream(tarBall.outputStream())
 
         val files = recurseDirectory(directory)
 
@@ -59,18 +57,16 @@ class TarArchiveManager(private val logger: Logger) : ArchiveManager {
         }
         logger.message("Extracting tar archive $tar to $destinationDirectory")
 
-        val input = TarArchiveInputStream(GzipCompressorInputStream(tar.inputStream()))
+        val input = TarArchiveInputStream(tar.inputStream())
 
         var entry: TarArchiveEntry?
 
-        while ((input.nextTarEntry.also { entry = it }) != null) {
+        while (input.nextTarEntry.also { entry = it } != null) {
             if (!input.canReadEntryData(entry)) {
-                //TODO TW-75451: Add logs
-                continue
+                throw IllegalArgumentException("Entry $entry is not readable")
             }
 
-            val name = "${destinationDirectory.absolutePath}/${entry!!.name}"
-            val file = File(name)
+            val file = File(destinationDirectory, entry!!.name)
             if (entry!!.isDirectory) {
                 makeDirectory(file)
             } else {
