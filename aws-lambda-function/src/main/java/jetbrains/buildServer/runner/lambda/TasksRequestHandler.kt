@@ -14,6 +14,7 @@ import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.io.path.createTempDirectory
@@ -41,13 +42,15 @@ class TasksRequestHandler : RequestStreamHandler {
                 )
             )
 
+            cleanTempDirectory()
+
+            val destinationDirectory = createTempDirectory(prefix = WORKING_DIRECTORY_PREFIX).toFile()
             val workingDirectory =
-                workingDirectoryTransfer.retrieve(runDetails.directoryId, createTempDirectory().toFile())
+                workingDirectoryTransfer.retrieve(runDetails.directoryId, destinationDirectory)
 
             runBlocking {
                 detachedBuildApi.startLogging()
                 LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
-                workingDirectory.deleteRecursively()
             }
         } catch (e: Throwable) {
             context.logger.log("Exception during the execution: $e")
@@ -62,5 +65,19 @@ class TasksRequestHandler : RequestStreamHandler {
         }
     }
 
+    private fun cleanTempDirectory() {
+        val tmpDir = File("/tmp")
+
+        tmpDir.listFiles { _, name ->
+            name.startsWith(WORKING_DIRECTORY_PREFIX)
+        }?.forEach { workingDirectory ->
+            workingDirectory.deleteRecursively()
+        }
+    }
+
     private fun getTransferManager(): TransferManager = TransferManagerBuilder.standard().build()
+
+    companion object {
+        const val WORKING_DIRECTORY_PREFIX = "teamcity-"
+    }
 }
