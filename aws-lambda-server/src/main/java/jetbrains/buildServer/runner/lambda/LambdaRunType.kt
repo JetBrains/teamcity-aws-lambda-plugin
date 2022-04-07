@@ -1,7 +1,7 @@
 package jetbrains.buildServer.runner.lambda
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
+import jetbrains.buildServer.runner.lambda.IamClient.createIamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_HTML
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_JSP
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DESCR
@@ -43,12 +43,9 @@ class LambdaRunType(
         return resolvedHtmlPath
     }
 
-    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor {
-        AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(it) { clients ->
-            AmazonIdentityManagementClientBuilder.standard()
-                .withClientConfiguration(clients.clientConfiguration)
-                .withCredentials(AWSCommonParams.getCredentialsProvider(it))
-                .build()
+    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor { properties ->
+        AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
+            clients.createIamClient(properties)
         }
     }
 

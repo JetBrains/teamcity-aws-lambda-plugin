@@ -51,7 +51,7 @@ class LambdaPropertiesProcessor(private val getIamClient: (Map<String, String>) 
     private fun isValidIam(properties: MutableMap<String, String>, iamRole: String): Boolean {
         val iam = getIamClient(properties)
 
-        val iamRoleName = getRoleName(iam, iamRole)
+        val iamRoleName = getRoleName(iamRole)
         val roleRequest = GetRoleRequest().apply {
             roleName = iamRoleName
         }
@@ -64,11 +64,9 @@ class LambdaPropertiesProcessor(private val getIamClient: (Map<String, String>) 
         }
     }
 
-    private fun getRoleName(iam: AmazonIdentityManagement, iamRole: String): String {
-        val arn = iam.user.user.arn
-        val accountId = arn.substring(LambdaConstants.IAM_PREFIX.length + 2, arn.indexOf(":user"))
-        val roleArnPrefix = "${LambdaConstants.IAM_PREFIX}::$accountId:role/"
+    private fun getRoleName(iamRole: String): String {
+        val roleArnPrefix = ":role/"
 
-        return iamRole.substring(roleArnPrefix.length)
+        return iamRole.substring(iamRole.indexOf(roleArnPrefix) + roleArnPrefix.length)
     }
 }

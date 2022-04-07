@@ -1,10 +1,10 @@
 package jetbrains.buildServer.runner.lambda.web
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import com.amazonaws.services.identitymanagement.model.AmazonIdentityManagementException
 import com.amazonaws.services.identitymanagement.model.ListRolesRequest
 import com.amazonaws.services.identitymanagement.model.Role
+import jetbrains.buildServer.runner.lambda.IamClient.createIamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
 import jetbrains.buildServer.runner.lambda.model.IamRolesList
@@ -29,10 +29,7 @@ class LambdaIamRolesListController(
     override fun handle(request: HttpServletRequest, properties: Map<String, String>): IamRolesList {
         try {
             val iam = AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
-                AmazonIdentityManagementClientBuilder.standard()
-                    .withClientConfiguration(clients.clientConfiguration)
-                    .withCredentials(AWSCommonParams.getCredentialsProvider(properties))
-                    .build()
+                clients.createIamClient(properties)
             }
 
             val roles = getRoles(iam).map { IamRole(it.arn, it.roleName) }
