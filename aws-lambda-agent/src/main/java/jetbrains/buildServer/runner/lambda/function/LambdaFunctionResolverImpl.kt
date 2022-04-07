@@ -84,11 +84,9 @@ class LambdaFunctionResolverImpl(
         function: GetFunctionResult
     ): Boolean {
         if (function.configuration.memorySize != lambdaMemory) {
-            System.err.println("Difference in $lambdaMemory and ${function.configuration.memorySize}")
             return true
         }
         if (function.configuration.role != iamRole) {
-            System.err.println("Difference in $iamRole and ${function.configuration.role}")
             return true
         }
         return false
