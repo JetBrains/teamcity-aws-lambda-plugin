@@ -3,6 +3,7 @@ package jetbrains.buildServer.runner.lambda.web
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
+import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.runner.lambda.IamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
@@ -20,8 +21,7 @@ class LambaDefaultIamRoleCreateController(
         controllerManager: WebControllerManager,
         projectManager: ProjectManager,
         accessManager: AccessChecker,
-        private val oAuthConnectionsManager: OAuthConnectionsManager,
-        private val awsConnectorFactory: AwsConnectorFactory
+        private val awsConnectionsManager: AwsConnectionsManager
 ) : JsonController<IamRole>(
         descriptor, controllerManager, projectManager, accessManager, LambdaConstants.IAM_ROLES_CREATE_PATH, setOf(
         METHOD_POST
@@ -29,7 +29,7 @@ class LambaDefaultIamRoleCreateController(
 ) {
     override fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): IamRole {
         try {
-            val iam = IamClient.getIamClientFromProperties(oAuthConnectionsManager, awsConnectorFactory, project, properties)
+            val iam = IamClient.getIamClientFromProperties(awsConnectionsManager, project, properties)
             return getRole(iam) ?: createRole(iam)
         } catch (e: AmazonIdentityManagementException) {
             throw JsonControllerException(e.errorMessage, HttpStatus.valueOf(e.statusCode))

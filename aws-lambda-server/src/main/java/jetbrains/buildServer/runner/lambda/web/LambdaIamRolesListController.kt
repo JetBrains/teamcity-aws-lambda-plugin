@@ -5,6 +5,7 @@ import com.amazonaws.services.identitymanagement.model.AmazonIdentityManagementE
 import com.amazonaws.services.identitymanagement.model.ListRolesRequest
 import com.amazonaws.services.identitymanagement.model.Role
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
+import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.runner.lambda.IamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
@@ -23,8 +24,7 @@ class LambdaIamRolesListController(
         controllerManager: WebControllerManager,
         projectManager: ProjectManager,
         accessManager: AccessChecker,
-        private val oAuthConnectionsManager: OAuthConnectionsManager,
-        private val awsConnectorFactory: AwsConnectorFactory
+        private val awsConnectionsManager: AwsConnectionsManager
 ) : JsonController<IamRolesList>(
         descriptor, controllerManager, projectManager, accessManager, LambdaConstants.IAM_ROLES_LIST_PATH, setOf(
         METHOD_POST
@@ -32,7 +32,7 @@ class LambdaIamRolesListController(
 ) {
     override fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): IamRolesList {
         try {
-            val iam = IamClient.getIamClientFromProperties(oAuthConnectionsManager, awsConnectorFactory, project, properties)
+            val iam = IamClient.getIamClientFromProperties(awsConnectionsManager, project, properties)
 
             val roles = getRoles(iam).map { IamRole(it.arn, it.roleName) }
             val defaultRole = roles.find { it.roleName.endsWith(LambdaConstants.DEFAULT_LAMBDA_ARN_NAME) }
