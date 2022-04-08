@@ -5,6 +5,7 @@ import jetbrains.buildServer.controllers.BaseController
 import jetbrains.buildServer.controllers.BasePropertiesBean
 import jetbrains.buildServer.controllers.admin.projects.PluginPropertiesUtil
 import jetbrains.buildServer.serverSide.ProjectManager
+import jetbrains.buildServer.serverSide.SProject
 import jetbrains.buildServer.serverSide.auth.AccessChecker
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
@@ -68,7 +69,7 @@ abstract class JsonController<T : Any>(
     private fun writeJson(response: HttpServletResponse, data: Any) =
         writeMessage(response, objectMapper.writeValueAsString(data), MediaType.APPLICATION_JSON_VALUE)
 
-    abstract fun handle(request: HttpServletRequest, properties: Map<String, String>): T
+    abstract fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): T
 
     override fun doHandle(request: HttpServletRequest, response: HttpServletResponse): ModelAndView? {
         if (!allowedMethods.contains(request.method)) {
@@ -91,7 +92,7 @@ abstract class JsonController<T : Any>(
         val bean = BasePropertiesBean(null)
         PluginPropertiesUtil.bindPropertiesFromRequest(request, bean)
         return try {
-            val data = handle(request, bean.properties)
+            val data = handle(project, request, bean.properties)
             writeJson(response, data)
         } catch (controllerException: JsonControllerException) {
             writeError(response, controllerException.message, controllerException.status)

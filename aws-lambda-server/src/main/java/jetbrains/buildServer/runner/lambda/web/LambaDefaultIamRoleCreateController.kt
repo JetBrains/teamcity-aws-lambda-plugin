@@ -2,35 +2,36 @@ package jetbrains.buildServer.runner.lambda.web
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
-import jetbrains.buildServer.runner.lambda.IamClient.createIamClient
+import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
+import jetbrains.buildServer.runner.lambda.IamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
 import jetbrains.buildServer.serverSide.ProjectManager
+import jetbrains.buildServer.serverSide.SProject
 import jetbrains.buildServer.serverSide.auth.AccessChecker
-import jetbrains.buildServer.util.amazon.AWSCommonParams
+import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
 import org.springframework.http.HttpStatus
 import javax.servlet.http.HttpServletRequest
 
 class LambaDefaultIamRoleCreateController(
-    descriptor: PluginDescriptor,
-    controllerManager: WebControllerManager,
-    projectManager: ProjectManager,
-    accessManager: AccessChecker,
+        descriptor: PluginDescriptor,
+        controllerManager: WebControllerManager,
+        projectManager: ProjectManager,
+        accessManager: AccessChecker,
+        private val oAuthConnectionsManager: OAuthConnectionsManager,
+        private val awsConnectorFactory: AwsConnectorFactory
 ) : JsonController<IamRole>(
-    descriptor, controllerManager, projectManager, accessManager, LambdaConstants.IAM_ROLES_CREATE_PATH, setOf(
+        descriptor, controllerManager, projectManager, accessManager, LambdaConstants.IAM_ROLES_CREATE_PATH, setOf(
         METHOD_POST
-    )
+)
 ) {
-    override fun handle(request: HttpServletRequest, properties: Map<String, String>): IamRole {
+    override fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): IamRole {
         try {
-            val iam = AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
-                clients.createIamClient(properties)
-            }
-
+            val iam = IamClient.getIamClientFromProperties(oAuthConnectionsManager, awsConnectorFactory, project, properties)
             return getRole(iam) ?: createRole(iam)
-        }catch (e: AmazonIdentityManagementException){
+        } catch (e: AmazonIdentityManagementException) {
             throw JsonControllerException(e.errorMessage, HttpStatus.valueOf(e.statusCode))
         }
 
@@ -38,10 +39,10 @@ class LambaDefaultIamRoleCreateController(
 
     private fun createRole(iam: AmazonIdentityManagement): IamRole {
         val policyResource = javaClass.classLoader.getResource(ROLE_POLICY_DOCUMENT)
-            ?: throw JsonControllerException(
-                "Failed to find policy resource document",
-                HttpStatus.INTERNAL_SERVER_ERROR
-            )
+                ?: throw JsonControllerException(
+                        "Failed to find policy resource document",
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                )
 
         val policyDocument = policyResource.readText()
         val createRoleRequest = CreateRoleRequest().apply {
