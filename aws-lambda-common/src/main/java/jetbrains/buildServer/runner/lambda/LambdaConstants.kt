@@ -55,6 +55,11 @@ object LambdaConstants {
     const val IAM_ROLE_INVALID_ERROR = "Specified IAM Role does not exist"
     const val IAM_ROLE_SELECT_OPTION = "-- Select IAM Role --"
 
+    const val PROJECT_ID_PARAM = "lambda.project.id"
+    const val AWS_ACCESS_KEY_ID = "lambda.aws.access.key.id"
+    const val AWS_SECRET_ACCESS_KEY = "lambda.aws.secret.access.key"
+    const val AWS_REGION = "lambda.aws.region"
+
     const val LAMBDA_FUNCTION_MAX_TIMEOUT = 900
     const val LAMBDA_FUNCTION_MAX_TIMEOUT_LEEWAY = 300
     const val S3_URL_TIMEOUT_MINUTES = 5

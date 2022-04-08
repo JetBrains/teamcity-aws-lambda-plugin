@@ -1,7 +1,6 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
-import jetbrains.buildServer.runner.lambda.IamClient.createIamClient
+import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_HTML
 import jetbrains.buildServer.runner.lambda.LambdaConstants.EDIT_PARAMS_JSP
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DESCR
@@ -9,20 +8,20 @@ import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_DISPLAY_NAME
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.LambdaConstants.VIEW_PARAMS_HTML
 import jetbrains.buildServer.runner.lambda.LambdaConstants.VIEW_PARAMS_JSP
-import jetbrains.buildServer.serverSide.PropertiesProcessor
-import jetbrains.buildServer.serverSide.RunType
-import jetbrains.buildServer.serverSide.RunTypeRegistry
-import jetbrains.buildServer.serverSide.ServerSettings
-import jetbrains.buildServer.util.amazon.AWSCommonParams
+import jetbrains.buildServer.serverSide.*
+import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
 import org.springframework.web.servlet.ModelAndView
 
 class LambdaRunType(
-    registry: RunTypeRegistry,
-    private val descriptor: PluginDescriptor,
-    private val controllerManager: WebControllerManager,
-    private val serverSettings: ServerSettings
+        registry: RunTypeRegistry,
+        private val descriptor: PluginDescriptor,
+        private val controllerManager: WebControllerManager,
+        private val serverSettings: ServerSettings,
+        private val oAuthConnectionsManager: OAuthConnectionsManager,
+        private val awsConnectorFactory: AwsConnectorFactory,
+        private val projectManager: ProjectManager
 ) : RunType() {
 
     private val myEditParamsPath: String = registerController(EDIT_PARAMS_JSP, EDIT_PARAMS_HTML)
@@ -43,18 +42,15 @@ class LambdaRunType(
         return resolvedHtmlPath
     }
 
-    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor { properties ->
-        AWSCommonParams.withAWSClients<AmazonIdentityManagement, Exception>(properties) { clients ->
-            clients.createIamClient(properties)
-        }
+    override fun getRunnerPropertiesProcessor(): PropertiesProcessor = LambdaPropertiesProcessor(projectManager, oAuthConnectionsManager, awsConnectorFactory) { project, properties ->
+        IamClient.getIamClientFromProperties(oAuthConnectionsManager, awsConnectorFactory, project, properties)
     }
 
     override fun getEditRunnerParamsJspFilePath(): String = myEditParamsPath
 
     override fun getViewRunnerParamsJspFilePath(): String = myViewEditParamsPath
 
-    override fun getDefaultRunnerProperties(): MutableMap<String, String> =
-        AWSCommonParams.getDefaults(serverSettings.serverUUID)
+    override fun getDefaultRunnerProperties(): Map<String, String> = emptyMap()
 
     override fun getType(): String = RUNNER_TYPE
 

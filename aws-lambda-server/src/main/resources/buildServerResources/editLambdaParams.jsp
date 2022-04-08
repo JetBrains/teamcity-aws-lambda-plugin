@@ -17,12 +17,11 @@
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
 <%@include file="paramsConstants.jspf" %>
+<%@include file="awsConnection/awsConnectionConstants.jspf"%>
+<jsp:useBean id="buildForm"  scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 
-<jsp:include page="editAWSCommonParams.jsp">
-    <jsp:param name="requireRegion" value="${true}"/>
-    <jsp:param name="requireEnvironment" value="${false}"/>
-</jsp:include>
 
+<jsp:include page="awsConnection/availableAwsConnections.jsp"/>
 
 <l:settingsGroup title="Lambda Settings">
     <tr data-steps="${lambda_settings_step}">
@@ -77,16 +76,18 @@
     </tr>
 </l:settingsGroup>
 
+<props:hiddenProperty name="${project_id_param}" value="${buildForm.project.externalId}"/>
+
 <script type="text/javascript">
 
     $j(document).ready(function () {
 
-        const keyId = BS.Util.escapeId('aws.access.key.id');
-        const keySecret = BS.Util.escapeId('secure:aws.secret.access.key');
         const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
         const iamRoleError = $j(BS.Util.escapeId('error_${iam_role_param}'));
         const createIamRoleButton = $j(BS.Util.escapeId('${iam_role_create_button}'));
-
+        const selectId = BS.Util.escape('${avail_connections_select_id}');
+        const availableConnectionsSelectId = "#" + selectId;
+        const availableConnectionsInput = "#-ufd-teamcity-ui-" + selectId;
 
         let rolesList;
 
@@ -125,7 +126,11 @@
         }
 
         function loadIamRoles() {
-            BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm)
+            const selectedConnection = $j(availableConnectionsInput).val()
+            if (!selectedConnection || selectedConnection.empty()){
+                return;
+            }
+            BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm);
             const parameters = getParameters();
             loadingChanges()
             $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
@@ -137,8 +142,9 @@
                     BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm)
                 })
                 .catch(error => {
-                    iamRoleError.text("Error getting the IAM Roles: " + error.responseText)
-                    BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true)
+
+                    iamRoleError.text("Error getting the IAM Roles: " + error.responseText);
+                    BS.ErrorsAwareListener.onCompleteSave(BS.EditBuildRunnerForm, "<errors/>", true);
                     if (error.status !== 403) {
                         throw error
                     }
@@ -147,11 +153,11 @@
             })
         }
 
-        loadIamRoles()
+        loadIamRoles();
 
 
-        $j(document).on('change', keyId + ', ' + keySecret, function () {
-            loadIamRoles()
+        $j(availableConnectionsSelectId).change(function () {
+            loadIamRoles();
         });
 
         function loadingChanges() {

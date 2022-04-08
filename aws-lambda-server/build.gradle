@@ -20,6 +20,8 @@ dependencies {
     compile project(':aws-lambda-common')
 
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
+    compile "org.jetbrains.teamcity:oauth:${teamcityVersion}"
+    compileOnly "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     compile 'commons-validator:commons-validator:1.7'
     compile 'com.amazonaws:aws-java-sdk-iam:1.12.173'
