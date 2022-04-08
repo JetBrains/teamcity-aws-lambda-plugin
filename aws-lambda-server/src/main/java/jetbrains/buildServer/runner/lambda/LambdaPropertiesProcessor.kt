@@ -4,20 +4,21 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
+import jetbrains.buildServer.clouds.amazon.connector.errors.features.NoLinkedAwsConnectionIdParameter
+import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
+import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.PropertiesProcessor
 import jetbrains.buildServer.serverSide.SProject
-import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import jetbrains.buildServer.util.CollectionsUtil
 import jetbrains.buildServer.util.StringUtil
 import org.apache.commons.validator.routines.UrlValidator
 
 class LambdaPropertiesProcessor(
         private val projectManager: ProjectManager,
-        private val oAuthConnectionsManager: OAuthConnectionsManager,
-        private val awsConnectorFactory: AwsConnectorFactory,
+        private val awsConnectionsManager: AwsConnectionsManager,
         private val getIamClient: (SProject, Map<String, String>) -> AmazonIdentityManagement) :
         PropertiesProcessor {
     override fun process(properties: MutableMap<String, String>): MutableCollection<InvalidProperty> {
@@ -62,24 +63,19 @@ class LambdaPropertiesProcessor(
         }
 
         val connectionId = properties[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM]
-        val connectionDescriptor = if (StringUtil.isEmpty(connectionId)) {
+        if (StringUtil.isEmpty(connectionId)) {
             invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "No connection has been chosen"
-            null
         } else if (project != null) {
-            oAuthConnectionsManager.findConnectionById(project, connectionId!!) ?: kotlin.run {
+            try {
+                val credentialsProperties = awsConnectionsManager.getLinkedAwsConnection(properties, project)!!;
+                val region = credentialsProperties.region
+                val credentialsProvider = credentialsProperties.credentialsProvider
+                properties[LambdaConstants.AWS_ACCESS_KEY_ID] = credentialsProvider.credentials.awsAccessKeyId
+                properties[LambdaConstants.AWS_SECRET_ACCESS_KEY] = credentialsProvider.credentials.awsSecretKey
+                properties[LambdaConstants.AWS_REGION] = region
+            } catch (e: NoLinkedAwsConnectionIdParameter) {
                 invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "No connection $connectionId found"
-                null
             }
-        } else {
-            null
-        }
-
-        connectionDescriptor?.let {
-            val credentialsProvider = awsConnectorFactory.buildAwsCredentialsProvider(it.parameters)
-            val region = it.parameters.getValue(AwsCloudConnectorConstants.REGION_NAME_PARAM)
-            properties[LambdaConstants.AWS_ACCESS_KEY_ID] = credentialsProvider.credentials.awsAccessKeyId
-            properties[LambdaConstants.AWS_SECRET_ACCESS_KEY] = credentialsProvider.credentials.awsSecretKey
-            properties[LambdaConstants.AWS_REGION] = region
         }
 
         return CollectionsUtil.convertCollection(invalids.entries) { source ->

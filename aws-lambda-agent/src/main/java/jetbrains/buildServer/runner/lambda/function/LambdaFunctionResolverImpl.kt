@@ -104,7 +104,7 @@ class LambdaFunctionResolverImpl(
             return true
         }
         if (function.configuration.role != iamRole) {
-            return true
+            return true 
         }
         return false
     }

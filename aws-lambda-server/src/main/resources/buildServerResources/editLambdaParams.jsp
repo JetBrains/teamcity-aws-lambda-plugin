@@ -21,7 +21,9 @@
 <jsp:useBean id="buildForm"  scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 
 
-<jsp:include page="awsConnection/availableAwsConnections.jsp"/>
+<jsp:include page="awsConnection/availableAwsConnections.jsp">
+    <jsp:param name="projectId" value="${buildForm.project.externalId}"/>
+</jsp:include>
 
 <l:settingsGroup title="Lambda Settings">
     <tr data-steps="${lambda_settings_step}">
