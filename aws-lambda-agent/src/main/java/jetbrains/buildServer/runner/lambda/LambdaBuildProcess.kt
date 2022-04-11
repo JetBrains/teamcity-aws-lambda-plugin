@@ -9,6 +9,7 @@ import jetbrains.buildServer.agent.BuildProcess
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
+import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,7 +21,8 @@ class LambdaBuildProcess(
     private val objectMapper: ObjectMapper,
     private val workingDirectoryTransfer: WorkingDirectoryTransfer,
     private val commandLinePreparer: CommandLinePreparer,
-    private val lambdaFunctionResolver: LambdaFunctionResolver
+    private val lambdaFunctionResolver: LambdaFunctionResolver,
+    private val archiveManager: ArchiveManager
 ) :
     BuildProcess {
 
@@ -31,7 +33,9 @@ class LambdaBuildProcess(
         val projectName = context.buildParameters.systemProperties.getValue(LambdaConstants.TEAMCITY_PROJECT_NAME)
         val scriptContentFilename = commandLinePreparer.writeBuildScriptContent(projectName, context.workingDirectory)
         val key = getKey()
-        val directoryId = workingDirectoryTransfer.upload(key, context.workingDirectory)
+
+        val workingDirectoryTar = archiveManager.archiveDirectory(context.workingDirectory)
+        val directoryId = workingDirectoryTransfer.upload(key, workingDirectoryTar)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
         val functionName = lambdaFunctionResolver.resolveFunction()

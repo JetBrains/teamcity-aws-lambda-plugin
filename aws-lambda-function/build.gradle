@@ -44,3 +44,7 @@ task copyRuntimeDependencies(type: Copy) {
 }
 
 build.dependsOn copyRuntimeDependencies
+
+shadowJar {
+    destinationDirectory = file("$rootDir/aws-lambda-agent/src/main/resources")
+}

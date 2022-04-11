@@ -30,7 +30,6 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var transferManager: TransferManager
     private lateinit var amazonS3: AmazonS3
-    private lateinit var archiveManager: ArchiveManager
     private lateinit var file: File
     private lateinit var logger: Logger
 
@@ -43,7 +42,6 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
         m.setThreadingPolicy(Synchroniser())
         transferManager = m.mock(TransferManager::class.java)
         amazonS3 = m.mock(AmazonS3::class.java)
-        archiveManager = m.mock(ArchiveManager::class.java)
         file = m.mock(File::class.java, "TarFile")
         logger = m.mockBuildLogger()
 
@@ -98,12 +96,10 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
         m.checking(object : Expectations() {
             init {
-                oneOf(archiveManager).archiveDirectory(workDirectory)
-                will(returnValue(file))
                 oneOf(transferManager).upload(
                     getBucketName(),
                     UPLOAD_KEY,
-                    file
+                    workDirectory
                 )
                 will(returnValue(upload))
                 oneOf(upload).waitForCompletion()
@@ -185,7 +181,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     fun testRetrieve() {
         val s3WorkingDirectoryTransfer = createClient()
         val download = m.mock(PresignedUrlDownload::class.java)
-        val destinationDirectory = m.mock(File::class.java)
+        m.mock(File::class.java)
 
         m.checking(object : Expectations() {
             init {
@@ -195,16 +191,15 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
                 )
                 will(returnValue(download))
                 oneOf(download).waitForCompletion()
-                oneOf(archiveManager).extractDirectory(with(any(File::class.java)), with(destinationDirectory))
             }
         })
 
-        s3WorkingDirectoryTransfer.retrieve(MOCK_URL, destinationDirectory)
+        s3WorkingDirectoryTransfer.retrieve(MOCK_URL)
     }
 
     private fun getBucketName() = "${LambdaConstants.BUCKET_NAME}-$REGION_NAME"
 
-    private fun createClient() = S3WorkingDirectoryTransfer(logger, transferManager, archiveManager)
+    private fun createClient() = S3WorkingDirectoryTransfer(logger, transferManager)
 
 
     companion object {

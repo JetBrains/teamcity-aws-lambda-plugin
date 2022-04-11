@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.client.engine.cio.*
+import jetbrains.buildServer.runner.lambda.LambdaConstants.FILE_PREFIX
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
@@ -36,21 +37,23 @@ class TasksRequestHandler : RequestStreamHandler {
         )
 
         try {
+            val archiveManager = TarArchiveManager(
+                logger
+            )
             val workingDirectoryTransfer = S3WorkingDirectoryTransfer(
-                logger, getTransferManager(), TarArchiveManager(
-                    logger
-                )
+                logger, getTransferManager()
             )
 
             cleanTempDirectory()
 
-            val destinationDirectory = createTempDirectory(prefix = WORKING_DIRECTORY_PREFIX).toFile()
-            val workingDirectory =
-                workingDirectoryTransfer.retrieve(runDetails.directoryId, destinationDirectory)
+            val workingDirectoryArchive =
+                workingDirectoryTransfer.retrieve(runDetails.directoryId)
+            val destinationDirectory = createTempDirectory(prefix = FILE_PREFIX).toFile()
+            archiveManager.extractDirectory(workingDirectoryArchive, destinationDirectory)
 
             runBlocking {
                 detachedBuildApi.startLogging()
-                LambdaCommandLine(runDetails, context.logger, workingDirectory).executeCommandLine(detachedBuildApi)
+                LambdaCommandLine(runDetails, context.logger, destinationDirectory).executeCommandLine(detachedBuildApi)
             }
         } catch (e: Throwable) {
             context.logger.log("Exception during the execution: $e")
@@ -69,15 +72,11 @@ class TasksRequestHandler : RequestStreamHandler {
         val tmpDir = File("/tmp")
 
         tmpDir.listFiles { _, name ->
-            name.startsWith(WORKING_DIRECTORY_PREFIX)
+            name.startsWith(FILE_PREFIX)
         }?.forEach { workingDirectory ->
             workingDirectory.deleteRecursively()
         }
     }
 
     private fun getTransferManager(): TransferManager = TransferManagerBuilder.standard().build()
-
-    companion object {
-        const val WORKING_DIRECTORY_PREFIX = "teamcity-"
-    }
 }

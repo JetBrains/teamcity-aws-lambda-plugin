@@ -4,5 +4,5 @@ import java.io.File
 
 interface WorkingDirectoryTransfer {
     fun upload(key: String, workingDirectory: File): String
-    fun retrieve(directoryId: String, destinationDirectory: File): File
+    fun retrieve(directoryId: String): File
 }

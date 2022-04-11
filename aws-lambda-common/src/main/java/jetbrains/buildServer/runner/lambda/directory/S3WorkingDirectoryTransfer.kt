@@ -16,8 +16,7 @@ import java.util.*
 
 class S3WorkingDirectoryTransfer(
     private val logger: Logger,
-    private val transferManager: TransferManager,
-    private val archiveManager: ArchiveManager
+    private val transferManager: TransferManager
 ) :
     WorkingDirectoryTransfer {
     private val bucketName = "$BUCKET_NAME-${transferManager.amazonS3Client.regionName}"
@@ -49,10 +48,8 @@ class S3WorkingDirectoryTransfer(
             createBucket()
         }
 
-        val workingDirectoryTar = archiveManager.archiveDirectory(workingDirectory)
-
         logger.message("Starting upload of working directory...")
-        val upload = transferManager.upload(bucketName, key, workingDirectoryTar)
+        val upload = transferManager.upload(bucketName, key, workingDirectory)
         upload.waitForCompletion()
 
         val generatePresignedUrlRequest = GeneratePresignedUrlRequest(bucketName, key).apply {
@@ -71,17 +68,15 @@ class S3WorkingDirectoryTransfer(
         time = expirationTimeMillis
     }
 
-    override fun retrieve(url: String, destinationDirectory: File): File {
+    override fun retrieve(url: String): File {
         logger.message("Downloading working directory from S3 bucket")
-        val tempFile = kotlin.io.path.createTempFile().toFile()
+        val tempFile = kotlin.io.path.createTempFile(prefix = LambdaConstants.FILE_PREFIX).toFile()
 
         val presignedUrlDownload = PresignedUrlDownloadRequest(URL(url))
         val download = transferManager.download(presignedUrlDownload, tempFile)
 
         download.waitForCompletion()
         logger.message("Download complete")
-        archiveManager.extractDirectory(tempFile, destinationDirectory)
-        tempFile.delete()
-        return destinationDirectory
+        return tempFile
     }
 }

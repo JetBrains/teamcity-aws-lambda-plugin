@@ -33,14 +33,15 @@ class LambdaRunner : AgentBuildRunner {
             logger,
             awsLambda,
             jacksonObjectMapper(),
-            S3WorkingDirectoryTransfer(genericLogger, getTransferManager(context), TarArchiveManager(genericLogger)),
+            S3WorkingDirectoryTransfer(genericLogger, getTransferManager(context)),
             UnixCommandLinePreparer(context, logger),
             LambdaFunctionResolverImpl(
                 context,
                 logger,
                 awsLambda,
                 ZipFunctionDownloader(logger, LambdaConstants.S3_CODE_FUNCTION_URL),
-            )
+            ),
+            TarArchiveManager(genericLogger)
         )
     }
 

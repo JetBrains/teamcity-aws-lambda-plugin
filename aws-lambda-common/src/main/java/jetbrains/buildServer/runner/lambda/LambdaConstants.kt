@@ -65,4 +65,5 @@ object LambdaConstants {
     const val S3_CODE_FUNCTION_URL = "https://teamcity-lambda-runner.s3.eu-central-1.amazonaws.com/aws-lambda-function-all.jar"
     const val DEFAULT_LAMBDA_ARN_NAME = "teamcity-lambda-runner"
     const val IAM_PREFIX = "arn:aws:iam"
+    const val FILE_PREFIX = "teamcity-"
 }

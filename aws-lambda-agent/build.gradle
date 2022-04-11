@@ -31,3 +31,5 @@ buildscript {
 repositories {
     mavenCentral()
 }
+
+project.tasks.compileKotlin.dependsOn ':aws-lambda-function:shadowJar'

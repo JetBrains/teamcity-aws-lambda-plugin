@@ -8,6 +8,7 @@ import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
+import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
 import org.jmock.Expectations
@@ -34,6 +35,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
     private lateinit var logger: BuildProgressLogger
     private lateinit var build: AgentRunningBuild
+    private lateinit var archiveManager: ArchiveManager
+    private lateinit var workingDirectoryArchive: File
 
 
     @BeforeMethod
@@ -48,11 +51,13 @@ class LambdaBuildProcessTest : BaseTestCase() {
         objectMapper = m.mock(ObjectMapper::class.java)
         buildParametersMap = m.mock(BuildParametersMap::class.java)
         workingDirectoryTransfer = m.mock(WorkingDirectoryTransfer::class.java)
-        workingDirectory = m.mock(File::class.java)
+        workingDirectory = m.mock(File::class.java, "WorkingDirectory")
         commandLinePreparer = m.mock(CommandLinePreparer::class.java)
         lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
         logger = m.mockBuildLogger()
         build = m.mock(AgentRunningBuild::class.java)
+        archiveManager = m.mock(ArchiveManager::class.java)
+        workingDirectoryArchive = m.mock(File::class.java, "WorkingDirectoryArchive")
 
         m.checking(object : Expectations() {
             init {
@@ -119,7 +124,9 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectory)
+                oneOf(archiveManager).archiveDirectory(workingDirectory)
+                will(returnValue(workingDirectoryArchive))
+                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
                 will(returnValue(DIRECTORY_ID))
                 oneOf(lambdaFunctionResolver).resolveFunction()
                 will(returnValue(FUNCTION_NAME))
@@ -187,7 +194,9 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectory)
+                oneOf(archiveManager).archiveDirectory(workingDirectory)
+                will(returnValue(workingDirectoryArchive))
+                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
                 will(returnValue(DIRECTORY_ID))
                 oneOf(lambdaFunctionResolver).resolveFunction()
                 will(returnValue(FUNCTION_NAME))
@@ -246,7 +255,8 @@ class LambdaBuildProcessTest : BaseTestCase() {
         objectMapper,
         workingDirectoryTransfer,
         commandLinePreparer,
-        lambdaFunctionResolver
+        lambdaFunctionResolver,
+        archiveManager
     )
 
     companion object {
