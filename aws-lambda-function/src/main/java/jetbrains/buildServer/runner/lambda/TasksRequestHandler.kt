@@ -10,7 +10,7 @@ import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FILE_PREFIX
 import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.Logger
-import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
@@ -40,7 +40,7 @@ class TasksRequestHandler : RequestStreamHandler {
             val archiveManager = TarArchiveManager(
                 logger
             )
-            val workingDirectoryTransfer = S3WorkingDirectoryTransfer(
+            val workingDirectoryTransfer = S3WorkingDirectoryTransferImpl(
                 logger, getTransferManager()
             )
 

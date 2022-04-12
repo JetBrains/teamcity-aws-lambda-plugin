@@ -3,6 +3,7 @@ package jetbrains.buildServer.runner.lambda.function
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import com.amazonaws.services.lambda.waiters.AWSLambdaWaiters
+import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.waiters.Waiter
 import com.amazonaws.waiters.WaiterParameters
 import jetbrains.buildServer.BaseTestCase
@@ -10,6 +11,7 @@ import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
+import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -18,7 +20,7 @@ import org.testng.Assert
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
-import java.nio.ByteBuffer
+import java.io.File
 
 class LambdaFunctionResolverImplTest : BaseTestCase() {
     private lateinit var m: Mockery
@@ -26,10 +28,10 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
     private lateinit var awsLambda: AWSLambda
     private lateinit var awsLambdaException: AWSLambdaException
     private lateinit var resourceNotFoundException: ResourceNotFoundException
-    private lateinit var functionDownloader: FunctionDownloader
     private lateinit var waiters: AWSLambdaWaiters
     private lateinit var waiter: Waiter<GetFunctionRequest>
     private lateinit var logger: BuildProgressLogger
+    private lateinit var workingDirectoryTransfer: S3WorkingDirectoryTransfer
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -42,10 +44,10 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         awsLambda = m.mock(AWSLambda::class.java)
         awsLambdaException = m.mock(AWSLambdaException::class.java)
         resourceNotFoundException = m.mock(ResourceNotFoundException::class.java)
-        functionDownloader = m.mock(FunctionDownloader::class.java)
         waiters = m.mock(AWSLambdaWaiters::class.java)
         waiter = m.mock(Waiter::class.java) as Waiter<GetFunctionRequest>
         logger = m.mockBuildLogger()
+        workingDirectoryTransfer = m.mock(S3WorkingDirectoryTransfer::class.java)
     }
 
     private fun mockRunnerParameters(): String {
@@ -120,6 +122,86 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
     }
 
     @Test
+    fun testResolveFunction_DefaultImage_CodeNotFound() {
+        val lambdaFunctionName = mockDefaultImage()
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
+                    functionName = lambdaFunctionName
+                })
+                will(returnValue(GetFunctionResult().apply {
+                    configuration = FunctionConfiguration().apply {
+                        memorySize = MEMORY_SIZE.toInt()
+                        role = IAM_ROLE_ARN
+                    }
+                }))
+            }
+        })
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(workingDirectoryTransfer).getValueProps(lambdaFunctionName)
+                will(returnValue(null))
+            }
+        })
+
+        expectUploadFunctionCode(lambdaFunctionName)
+        val lambdaFunctionResolve = createClient()
+        val functionName = lambdaFunctionResolve.resolveFunction()
+        Assert.assertEquals(functionName, lambdaFunctionName)
+    }
+
+
+    @Test
+    fun testResolveFunction_DefaultImage_DifferentCode() {
+        val lambdaFunctionName = mockDefaultImage()
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
+                    functionName = lambdaFunctionName
+                })
+                will(returnValue(GetFunctionResult().apply {
+                    configuration = FunctionConfiguration().apply {
+                        memorySize = MEMORY_SIZE.toInt()
+                        role = IAM_ROLE_ARN
+                    }
+                }))
+            }
+        })
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(workingDirectoryTransfer).getValueProps(lambdaFunctionName)
+                will(returnValue(ObjectMetadata().apply {
+                    addUserMetadata(LambdaFunctionResolverImpl.CHECKSUM_KEY, "differentHash")
+                }))
+            }
+        })
+
+        expectUploadFunctionCode(lambdaFunctionName)
+        val lambdaFunctionResolve = createClient()
+        val functionName = lambdaFunctionResolve.resolveFunction()
+        Assert.assertEquals(functionName, lambdaFunctionName)
+    }
+
+    private fun expectFunctionCodeUpdateCheck(lambdaFunctionName: String) {
+        val hash = getHash()
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(workingDirectoryTransfer).getValueProps(lambdaFunctionName)
+                will(returnValue(ObjectMetadata().apply {
+                    addUserMetadata(LambdaFunctionResolverImpl.CHECKSUM_KEY, hash)
+                }))
+            }
+        })
+    }
+
+    private fun getHash() = javaClass.classLoader.getResource(LambdaFunctionResolverImpl.FUNCTION_JAR_HASH)?.readText()
+
+    @Test
     fun testResolveFunction_DefaultImage() {
         val lambdaFunctionName = mockDefaultImage()
 
@@ -137,6 +219,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
             }
         })
 
+        expectFunctionCodeUpdateCheck(lambdaFunctionName)
         val lambdaFunctionResolve = createClient()
         val functionName = lambdaFunctionResolve.resolveFunction()
         Assert.assertEquals(functionName, lambdaFunctionName)
@@ -202,6 +285,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         })
 
         verifyConfigurationIsChanged(lambdaFunctionName)
+        expectFunctionCodeUpdateCheck(lambdaFunctionName)
         mockAwaitFunctionUpdates()
         val lambdaFunctionResolve = createClient()
         val functionName = lambdaFunctionResolve.resolveFunction()
@@ -255,6 +339,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         })
 
         verifyConfigurationIsChanged(lambdaFunctionName)
+        expectFunctionCodeUpdateCheck(lambdaFunctionName)
         mockAwaitFunctionUpdates()
         val lambdaFunctionResolve = createClient()
         val functionName = lambdaFunctionResolve.resolveFunction()
@@ -493,16 +578,30 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         Assert.assertEquals(functionName, lambdaFunctionName)
     }
 
+    private fun expectUploadFunctionCode(lambdaFunctionName: String){
+        m.checking(object : Expectations(){
+            init {
+                oneOf(workingDirectoryTransfer).upload(
+                    with(lambdaFunctionName),
+                    with(any(File::class.java)),
+                    with(mapOf(Pair(LambdaFunctionResolverImpl.CHECKSUM_KEY, getHash()!!)))
+                )
+            }
+        })
+    }
+
     private fun expectCreateFunctionWithDefaultImage(lambdaFunctionName: String) {
+        expectUploadFunctionCode(lambdaFunctionName)
         m.checking(object : Expectations() {
             init {
-                oneOf(functionDownloader).downloadFunctionCode()
-                val codeBuffer = ByteBuffer.wrap(ByteArray(0))
-                will(returnValue(codeBuffer))
+                oneOf(workingDirectoryTransfer).bucketName
+                will(returnValue(BUCKET_NAME))
+
                 oneOf(awsLambda).createFunction(CreateFunctionRequest().apply {
                     functionName = lambdaFunctionName
                     code = FunctionCode().apply {
-                        zipFile = codeBuffer
+                        s3Bucket = BUCKET_NAME
+                        s3Key = lambdaFunctionName
                         handler = LambdaConstants.FUNCTION_HANDLER
                     }
                     role = IAM_ROLE_ARN
@@ -516,12 +615,13 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
         })
     }
 
-    private fun createClient() = LambdaFunctionResolverImpl(context, logger, awsLambda, functionDownloader)
+    private fun createClient() = LambdaFunctionResolverImpl(context, logger, awsLambda, workingDirectoryTransfer)
 
     companion object {
         const val MEMORY_SIZE = "512"
         const val ECR_IMAGE_URI = "ecrImageUri"
         const val IAM_ROLE_ARN =
             "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.DEFAULT_LAMBDA_ARN_NAME}"
+        const val BUCKET_NAME = "bucketName"
     }
 }

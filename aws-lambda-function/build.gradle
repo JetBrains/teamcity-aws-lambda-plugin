@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     id "com.github.johnrengelman.shadow" version "6.1.0"
+    id 'org.gradle.crypto.checksum' version '1.4.0'
 }
 
 ext.ktor_version="2.0.0-beta-1"
@@ -44,7 +45,24 @@ task copyRuntimeDependencies(type: Copy) {
 }
 
 build.dependsOn copyRuntimeDependencies
+final resourcesDir = file("$rootDir/aws-lambda-agent/src/main/resources")
+
+
+import org.gradle.crypto.checksum.Checksum
+
+task createChecksums(type: Checksum, dependsOn: jar){
+    inputFiles.setFrom("$projectDir/build/libs")
+    outputDirectory = resourcesDir
+    checksumAlgorithm = Checksum.Algorithm.SHA512
+    appendFileNameToChecksum.set(true)
+}
 
 shadowJar {
-    destinationDirectory = file("$rootDir/aws-lambda-agent/src/main/resources")
+    destinationDirectory = resourcesDir
+    dependsOn(createChecksums)
+}
+
+tasks.withType(AbstractArchiveTask){
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }

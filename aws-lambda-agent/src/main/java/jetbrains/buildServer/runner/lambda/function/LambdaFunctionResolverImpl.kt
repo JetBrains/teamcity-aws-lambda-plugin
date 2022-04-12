@@ -6,12 +6,14 @@ import com.amazonaws.waiters.WaiterParameters
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import java.io.FileNotFoundException
 
 class LambdaFunctionResolverImpl(
     private val context: BuildRunnerContext,
     private val logger: BuildProgressLogger,
     private val awsLambda: AWSLambda,
-    private val functionDownloader: FunctionDownloader
+    private val workingDirectoryTransfer: S3WorkingDirectoryTransfer
 ) : LambdaFunctionResolver {
     private val lambdaMemory = context.runnerParameters.getValue(LambdaConstants.MEMORY_SIZE_PARAM).toInt()
     private val iamRole = context.runnerParameters.getValue(LambdaConstants.IAM_ROLE_PARAM)
@@ -37,6 +39,8 @@ class LambdaFunctionResolverImpl(
 
             if (functionImage != defaultImage && doesFunctionContainerNeedUpdate(function, functionImage)) {
                 updateFunctionContainer(functionImage, lambdaFunctionName)
+            } else if (functionImage == defaultImage && doesFunctionCodeNeedUpdate(lambdaFunctionName)) {
+                uploadFunctionCode(lambdaFunctionName)
             }
         } catch (e: ResourceNotFoundException) {
             createFunction(functionImage, lambdaFunctionName)
@@ -49,6 +53,19 @@ class LambdaFunctionResolverImpl(
 
         return lambdaFunctionName
     }
+
+    private fun doesFunctionCodeNeedUpdate(lambdaFunctionName: String): Boolean {
+        val hash = getHash()
+
+        val props = workingDirectoryTransfer.getValueProps(lambdaFunctionName)
+
+        return props?.getUserMetaDataOf(CHECKSUM_KEY) != hash
+    }
+
+    private fun getHash(): String =
+        (javaClass.classLoader.getResource(FUNCTION_JAR_HASH)?.readText()
+            ?: throw FileNotFoundException("Function jar $FUNCTION_JAR_HASH not found"))
+
 
     private fun updateFunctionContainer(functionImage: String, lambdaFunctionName: String) {
         logger.message("Function $lambdaFunctionName's container image is outdated, updating it")
@@ -95,12 +112,13 @@ class LambdaFunctionResolverImpl(
 
     private fun createFunction(functionImageUri: String, lambdaFunctionName: String) {
         logger.message("Function $lambdaFunctionName does not exist, creating it...")
-        // TODO: Add logic for function versioning: TW-75371
         val createFunctionRequest = if (functionImageUri == defaultImage) {
+            uploadFunctionCode(lambdaFunctionName)
             CreateFunctionRequest().apply {
                 functionName = lambdaFunctionName
                 code = FunctionCode().apply {
-                    zipFile = functionDownloader.downloadFunctionCode()
+                    s3Bucket = workingDirectoryTransfer.bucketName
+                    s3Key = lambdaFunctionName
                     handler = LambdaConstants.FUNCTION_HANDLER
                 }
                 role = iamRole
@@ -129,6 +147,23 @@ class LambdaFunctionResolverImpl(
         logger.message("Function $lambdaFunctionName has been created successfully")
     }
 
+    private fun uploadFunctionCode(lambdaFunctionName: String) {
+        logger.message("Updating function's code...")
+        val functionCodeResource = getFunctionCode()
+
+        val hash = getHash()
+
+        val functionCode = kotlin.io.path.createTempFile().toFile()
+        functionCode.writeBytes(functionCodeResource)
+
+        val props = mapOf(Pair(CHECKSUM_KEY, hash))
+        workingDirectoryTransfer.upload(lambdaFunctionName, functionCode, props)
+        logger.message("Updated function's code successfully")
+    }
+
+    private fun getFunctionCode() = (javaClass.classLoader.getResource(FUNCTION_JAR)?.readBytes()
+        ?: throw FileNotFoundException("Function jar $FUNCTION_JAR not found"))
+
     private fun awaitFunctionStatus(lambdaFunctionName: String) {
         val waiters = awsLambda.waiters()
         waiters.functionActiveV2().run(
@@ -148,5 +183,8 @@ class LambdaFunctionResolverImpl(
 
     companion object {
         private const val LATEST_TAG = ":latest"
+        private const val FUNCTION_JAR = "aws-lambda-function-all.jar"
+        internal const val FUNCTION_JAR_HASH = "aws-lambda-function.jar.sha512"
+        internal const val CHECKSUM_KEY = "checksum"
     }
 }

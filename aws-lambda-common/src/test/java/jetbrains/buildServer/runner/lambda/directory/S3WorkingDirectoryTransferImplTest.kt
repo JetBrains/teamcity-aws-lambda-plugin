@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest
 import com.amazonaws.services.s3.model.HeadBucketRequest
 import com.amazonaws.services.s3.model.PresignedUrlDownloadRequest
+import com.amazonaws.services.s3.model.PutObjectRequest
 import com.amazonaws.services.s3.transfer.PresignedUrlDownload
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.services.s3.transfer.Upload
@@ -26,7 +27,7 @@ import java.io.File
 import java.net.URL
 import java.time.Instant
 
-class S3WorkingDirectoryTransferTest : BaseTestCase() {
+class S3WorkingDirectoryTransferImplTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var transferManager: TransferManager
     private lateinit var amazonS3: AmazonS3
@@ -92,15 +93,13 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
     }
 
-    private fun verifyDirectoryIsUploaded(workDirectory: File, upload: Upload) {
+    private fun verifyDirectoryIsUploaded(workDirectory: File, upload: Upload, props: Map<String, String>) {
+
+        val matcher = typeSafeMatcher(props, workDirectory)
 
         m.checking(object : Expectations() {
             init {
-                oneOf(transferManager).upload(
-                    getBucketName(),
-                    UPLOAD_KEY,
-                    workDirectory
-                )
+                oneOf(transferManager).upload(with(matcher))
                 will(returnValue(upload))
                 oneOf(upload).waitForCompletion()
 
@@ -113,6 +112,17 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
     }
 
+    private fun typeSafeMatcher(props: Map<String, String>, workDirectory: File) =
+        object : TypeSafeMatcher<PutObjectRequest>() {
+            override fun describeTo(description: Description?) {
+                description?.appendText("Matching properties of PutObjectRequest")
+            }
+
+            override fun matchesSafely(item: PutObjectRequest): Boolean = item.bucketName == getBucketName()
+                    && item.key == UPLOAD_KEY && item.file == workDirectory && item.metadata.userMetadata == props
+
+        }
+
     @Test
     fun testUpload() {
         val s3WorkingDirectoryTransfer = createClient()
@@ -122,7 +132,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
         m.checking(object : Expectations() {
             init {
                 oneOf(amazonS3).headBucket(HeadBucketRequest(getBucketName()))
-                verifyDirectoryIsUploaded(workDirectory, upload)
+                verifyDirectoryIsUploaded(workDirectory, upload, emptyMap())
             }
         })
 
@@ -148,7 +158,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
                 oneOf(amazonS3).createBucket(getBucketName())
 
-                verifyDirectoryIsUploaded(workDirectory, upload)
+                verifyDirectoryIsUploaded(workDirectory, upload, emptyMap())
             }
         })
 
@@ -178,6 +188,24 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
     }
 
     @Test
+    fun testUpload_WithMetadata(){
+        val s3WorkingDirectoryTransfer = createClient()
+        val upload = m.mock(Upload::class.java)
+        val workDirectory = m.mock(File::class.java)
+        val props = mapOf(Pair("test", "test"))
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(amazonS3).headBucket(HeadBucketRequest(getBucketName()))
+                verifyDirectoryIsUploaded(workDirectory, upload, props)
+            }
+        })
+
+        val url = s3WorkingDirectoryTransfer.upload(UPLOAD_KEY, workDirectory, props)
+        Assert.assertEquals(url, MOCK_URL)
+    }
+
+    @Test
     fun testRetrieve() {
         val s3WorkingDirectoryTransfer = createClient()
         val download = m.mock(PresignedUrlDownload::class.java)
@@ -199,7 +227,7 @@ class S3WorkingDirectoryTransferTest : BaseTestCase() {
 
     private fun getBucketName() = "${LambdaConstants.BUCKET_NAME}-$REGION_NAME"
 
-    private fun createClient() = S3WorkingDirectoryTransfer(logger, transferManager)
+    private fun createClient() = S3WorkingDirectoryTransferImpl(logger, transferManager)
 
 
     companion object {

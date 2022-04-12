@@ -11,10 +11,9 @@ import jetbrains.buildServer.runner.lambda.LambdaConstants.LAMBDA_ENDPOINT_URL_P
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.Logger
-import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
+import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
-import jetbrains.buildServer.runner.lambda.function.ZipFunctionDownloader
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 
@@ -28,18 +27,19 @@ class LambdaRunner : AgentBuildRunner {
             }
         }
 
+        val workingDirectoryTransfer = S3WorkingDirectoryTransferImpl(genericLogger, getTransferManager(context))
         return LambdaBuildProcess(
             context,
             logger,
             awsLambda,
             jacksonObjectMapper(),
-            S3WorkingDirectoryTransfer(genericLogger, getTransferManager(context)),
+            workingDirectoryTransfer,
             UnixCommandLinePreparer(context, logger),
             LambdaFunctionResolverImpl(
                 context,
                 logger,
                 awsLambda,
-                ZipFunctionDownloader(logger, LambdaConstants.S3_CODE_FUNCTION_URL),
+                workingDirectoryTransfer,
             ),
             TarArchiveManager(genericLogger)
         )

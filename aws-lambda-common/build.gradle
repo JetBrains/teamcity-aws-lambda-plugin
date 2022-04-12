@@ -12,7 +12,7 @@ buildscript {
 
 dependencies {
     testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
-    compile 'com.amazonaws:aws-java-sdk-s3:1.12.167'
+    compile 'com.amazonaws:aws-java-sdk-s3:1.12.196'
     compile 'org.apache.commons:commons-compress:1.21'
 }
 
