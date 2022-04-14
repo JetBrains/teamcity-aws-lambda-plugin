@@ -46,8 +46,8 @@ configure(subprojects) {
     apply plugin: 'kotlin'
 
 
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
 
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
