@@ -34,6 +34,12 @@ class LambdaPropertiesProcessor(private val getIamClient: (Map<String, String>) 
                 LambdaConstants.MEMORY_SIZE_VALUE_ERROR
         }
 
+        when (properties[LambdaConstants.STORAGE_SIZE_PARAM]?.toIntOrNull()) {
+            null -> invalids[LambdaConstants.STORAGE_SIZE_PARAM] = LambdaConstants.STORAGE_SIZE_ERROR
+            !in LambdaConstants.MIN_STORAGE_SIZE..LambdaConstants.MAX_STORAGE_SIZE -> invalids[LambdaConstants.STORAGE_SIZE_PARAM] =
+                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+        }
+
         val iamRole = properties[LambdaConstants.IAM_ROLE_PARAM]
         when {
             iamRole == null -> invalids[LambdaConstants.IAM_ROLE_PARAM] = LambdaConstants.IAM_ROLE_ERROR

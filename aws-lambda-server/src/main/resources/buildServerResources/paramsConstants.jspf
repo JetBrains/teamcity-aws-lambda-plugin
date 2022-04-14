@@ -34,6 +34,9 @@
 <c:set var="memory_size_param" value="<%=LambdaConstants.MEMORY_SIZE_PARAM%>"/>
 <c:set var="memory_size_label" value="<%=LambdaConstants.MEMORY_SIZE_LABEL%>"/>
 <c:set var="memory_size_note" value="Lambda memory size. Must be an integer value between 128MB and 10,240MB"/>
+<c:set var="storage_size_param" value="<%=LambdaConstants.STORAGE_SIZE_PARAM%>"/>
+<c:set var="storage_size_label" value="<%=LambdaConstants.STORAGE_SIZE_LABEL%>"/>
+<c:set var="storage_size_note" value="Lambda storage size. Must be an integer value between 512MB and 10,240MB"/>
 <c:set var="lambda_settings_step" value="<%=LambdaConstants.LAMBDA_SETTINGS_STEP%>"/>
 <c:set var="iam_role_param" value="<%=LambdaConstants.IAM_ROLE_PARAM%>"/>
 <c:set var="iam_role_label" value="<%=LambdaConstants.IAM_ROLE_LABEL%>"/>

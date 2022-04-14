@@ -16,6 +16,7 @@ class LambdaFunctionResolverImpl(
     private val workingDirectoryTransfer: S3WorkingDirectoryTransfer
 ) : LambdaFunctionResolver {
     private val lambdaMemory = context.runnerParameters.getValue(LambdaConstants.MEMORY_SIZE_PARAM).toInt()
+    private val lambdaStorage = context.runnerParameters.getValue(LambdaConstants.STORAGE_SIZE_PARAM).toInt()
     private val iamRole = context.runnerParameters.getValue(LambdaConstants.IAM_ROLE_PARAM)
     private val defaultImage = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
 
@@ -91,6 +92,9 @@ class LambdaFunctionResolverImpl(
             functionName = lambdaFunctionName
             role = iamRole
             memorySize = lambdaMemory
+            ephemeralStorage = EphemeralStorage().apply {
+                size = lambdaStorage
+            }
         }
 
         awsLambda.updateFunctionConfiguration(updateFunctionConfigurationRequest)
@@ -106,12 +110,18 @@ class LambdaFunctionResolverImpl(
         if (function.configuration.role != iamRole) {
             return true
         }
+        if (function.configuration.ephemeralStorage.size != lambdaStorage){
+            return true
+        }
         return false
     }
 
 
     private fun createFunction(functionImageUri: String, lambdaFunctionName: String) {
         logger.message("Function $lambdaFunctionName does not exist, creating it...")
+        val storage = EphemeralStorage().apply {
+            size = lambdaStorage
+        }
         val createFunctionRequest = if (functionImageUri == defaultImage) {
             uploadFunctionCode(lambdaFunctionName)
             CreateFunctionRequest().apply {
@@ -124,6 +134,7 @@ class LambdaFunctionResolverImpl(
                 role = iamRole
                 publish = true
                 packageType = "Zip"
+                ephemeralStorage = storage
                 runtime = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
                 memorySize = this@LambdaFunctionResolverImpl.lambdaMemory
                 timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
@@ -137,6 +148,7 @@ class LambdaFunctionResolverImpl(
                 role = iamRole
                 publish = true
                 packageType = "Image"
+                ephemeralStorage = storage
                 memorySize = this@LambdaFunctionResolverImpl.lambdaMemory
                 timeout = LambdaConstants.LAMBDA_FUNCTION_MAX_TIMEOUT
             }

@@ -49,6 +49,13 @@ object LambdaConstants {
     const val MAX_MEMORY_SIZE = 10240
     const val MEMORY_SIZE_VALUE_ERROR = "Memory size must be an integer value between ${MIN_MEMORY_SIZE}MB and ${MAX_MEMORY_SIZE}MB"
 
+    const val STORAGE_SIZE_PARAM = "lambda.storage.size"
+    const val STORAGE_SIZE_LABEL = "Lambda Ephemeral Storage Size"
+    const val STORAGE_SIZE_ERROR = "Storage size must be specified"
+    const val MIN_STORAGE_SIZE = 512
+    const val MAX_STORAGE_SIZE = 10240
+    const val STORAGE_SIZE_VALUE_ERROR = "Storage size must be an integer value between ${MIN_STORAGE_SIZE}MB and ${MAX_STORAGE_SIZE}MB"
+
     const val IAM_ROLE_PARAM = "lambda.iam.role.arn"
     const val IAM_ROLE_LABEL = "Lambda IAM Role ARN"
     const val IAM_ROLE_ERROR = "IAM Role must be specified"
@@ -59,10 +66,8 @@ object LambdaConstants {
     const val LAMBDA_FUNCTION_MAX_TIMEOUT_LEEWAY = 300
     const val S3_URL_TIMEOUT_MINUTES = 5
 
-    const val JETBRAINS_AWS_ACCOUNT_ID = "913206223978"
     const val AWS_LAMBDA_BASIC_EXECUTION_ROLE_POLICY = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     const val DEFAULT_LAMBDA_RUNTIME = "java11"
-    const val S3_CODE_FUNCTION_URL = "https://teamcity-lambda-runner.s3.eu-central-1.amazonaws.com/aws-lambda-function-all.jar"
     const val DEFAULT_LAMBDA_ARN_NAME = "teamcity-lambda-runner"
     const val IAM_PREFIX = "arn:aws:iam"
     const val FILE_PREFIX = "teamcity-"

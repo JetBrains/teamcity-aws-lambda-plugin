@@ -55,6 +55,15 @@
     </tr>
 
     <tr data-steps="${lambda_settings_step}">
+        <th><label for="${storage_size_param}">${storage_size_label}: <l:star/></label></th>
+        <td><props:textProperty name="${storage_size_param}" className="longField"/>
+            <span class="smallNote">${storage_size_note}</span><span class="error"
+                                                                    id="error_${storage_size_param}"></span>
+
+        </td>
+    </tr>
+
+    <tr data-steps="${lambda_settings_step}">
         <th><label for="${iam_role_param}">${iam_role_label}: <l:star/></label></th>
         <td>
             <props:selectProperty name="${iam_role_param}" id="${iam_role_param}" className="longField">

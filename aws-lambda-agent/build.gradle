@@ -4,7 +4,7 @@ dependencies {
     compile project(':aws-lambda-common')
 
     testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
-    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.196'
+    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
     compile 'com.amazonaws:aws-java-sdk-ecr:1.12.196'
     compile 'com.amazonaws:aws-java-sdk-ecrpublic:1.12.196'
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"

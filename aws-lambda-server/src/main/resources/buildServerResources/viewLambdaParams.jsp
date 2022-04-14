@@ -31,6 +31,10 @@
 </div>
 
 <div class="parameter">
+    ${storage_size_label}: <props:displayValue name="${storage_size_param}" emptyValue="default"/>
+</div>
+
+<div class="parameter">
     ${iam_role_label}: <props:displayValue name="${iam_role_param}" emptyValue="default"/>
 </div>
 

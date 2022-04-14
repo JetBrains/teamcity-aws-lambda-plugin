@@ -59,6 +59,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     returnValue(
                         mapOf(
                             Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
+                            Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE),
                             Pair(LambdaConstants.ECR_IMAGE_URI_PARAM, ECR_IMAGE_URI),
                             Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE_ARN)
                         )
@@ -80,7 +81,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     returnValue(
                         mapOf(
                             Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
-                            Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE_ARN)
+                            Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE),
+                            Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE_ARN),
+
                         )
                     )
                 )
@@ -108,6 +111,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                     code = FunctionCodeLocation().apply {
                         imageUri = ECR_IMAGE_URI
@@ -134,6 +140,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                 }))
             }
@@ -166,6 +175,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                 }))
             }
@@ -214,6 +226,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                 }))
             }
@@ -232,6 +247,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     functionName = lambdaFunctionName
                     memorySize = MEMORY_SIZE.toInt()
                     role = IAM_ROLE_ARN
+                    ephemeralStorage = EphemeralStorage().apply {
+                        size = STORAGE_SIZE.toInt()
+                    }
                 })
             }
         })
@@ -250,6 +268,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = memory
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                     code = FunctionCodeLocation().apply {
                         imageUri = ECR_IMAGE_URI
@@ -279,6 +300,70 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = memory
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
+                    }
+                }))
+            }
+        })
+
+        verifyConfigurationIsChanged(lambdaFunctionName)
+        expectFunctionCodeUpdateCheck(lambdaFunctionName)
+        mockAwaitFunctionUpdates()
+        val lambdaFunctionResolve = createClient()
+        val functionName = lambdaFunctionResolve.resolveFunction()
+        Assert.assertEquals(functionName, lambdaFunctionName)
+    }
+
+    @Test
+    fun testResolveFunction_DifferentStorageSize() {
+        val lambdaFunctionName = mockRunnerParameters()
+        val storage = STORAGE_SIZE.toInt() + 1
+        m.checking(object : Expectations() {
+            init {
+                oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
+                    functionName = lambdaFunctionName
+                })
+                will(returnValue(GetFunctionResult().apply {
+                    configuration = FunctionConfiguration().apply {
+                        memorySize = MEMORY_SIZE.toInt()
+                        role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = storage
+                        }
+                    }
+                    code = FunctionCodeLocation().apply {
+                        imageUri = ECR_IMAGE_URI
+                    }
+                }))
+            }
+        })
+
+        verifyConfigurationIsChanged(lambdaFunctionName)
+        mockAwaitFunctionUpdates()
+        val lambdaFunctionResolve = createClient()
+        val functionName = lambdaFunctionResolve.resolveFunction()
+        Assert.assertEquals(functionName, lambdaFunctionName)
+    }
+
+    @Test
+    fun testResolveFunction_DefaultImage_DifferentStorageSize() {
+        val lambdaFunctionName = mockDefaultImage()
+        val storage = STORAGE_SIZE.toInt() + 1
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(awsLambda).getFunction(GetFunctionRequest().apply {
+                    functionName = lambdaFunctionName
+                })
+                will(returnValue(GetFunctionResult().apply {
+                    configuration = FunctionConfiguration().apply {
+                        memorySize = MEMORY_SIZE.toInt()
+                        role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = storage
+                        }
                     }
                 }))
             }
@@ -305,6 +390,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = iamRole
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                     code = FunctionCodeLocation().apply {
                         imageUri = ECR_IMAGE_URI
@@ -333,6 +421,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = iamRole
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                 }))
             }
@@ -370,6 +461,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                     code = FunctionCodeLocation().apply {
                         imageUri = "$ECR_IMAGE_URI-different"
@@ -397,6 +491,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     configuration = FunctionConfiguration().apply {
                         memorySize = MEMORY_SIZE.toInt()
                         role = IAM_ROLE_ARN
+                        ephemeralStorage = EphemeralStorage().apply {
+                            size = STORAGE_SIZE.toInt()
+                        }
                     }
                     code = FunctionCodeLocation().apply {
                         imageUri = "$ECR_IMAGE_URI:latest"
@@ -523,6 +620,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                         imageUri = ECR_IMAGE_URI
                     }
                     role = IAM_ROLE_ARN
+                    ephemeralStorage = EphemeralStorage().apply {
+                        size = STORAGE_SIZE.toInt()
+                    }
                     publish = true
                     packageType = "Image"
                     memorySize = MEMORY_SIZE.toInt()
@@ -606,6 +706,9 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
                     }
                     role = IAM_ROLE_ARN
                     publish = true
+                    ephemeralStorage = EphemeralStorage().apply {
+                        size = STORAGE_SIZE.toInt()
+                    }
                     packageType = "Zip"
                     runtime = LambdaConstants.DEFAULT_LAMBDA_RUNTIME
                     memorySize = MEMORY_SIZE.toInt()
@@ -619,6 +722,7 @@ class LambdaFunctionResolverImplTest : BaseTestCase() {
 
     companion object {
         const val MEMORY_SIZE = "512"
+        const val STORAGE_SIZE = "1024"
         const val ECR_IMAGE_URI = "ecrImageUri"
         const val IAM_ROLE_ARN =
             "${LambdaConstants.IAM_PREFIX}::accountId:role/${LambdaConstants.DEFAULT_LAMBDA_ARN_NAME}"

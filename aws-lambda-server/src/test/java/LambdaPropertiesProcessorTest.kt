@@ -184,6 +184,48 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
     @Test
     @Throws(Exception::class)
+    fun testProcess_StorageSizeNotNumber() {
+        verifyIamRole()
+        val propertiesProcessor = createPropertiesProcessor()
+
+        val properties = createDefaultProperties()
+
+        properties[LambdaConstants.STORAGE_SIZE_PARAM] = "error"
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                )
+            )
+        )
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testProcess_StorageSizeNotValidMemory() {
+        verifyIamRole()
+        val propertiesProcessor = createPropertiesProcessor()
+
+        val properties = createDefaultProperties()
+
+        properties[LambdaConstants.STORAGE_SIZE_PARAM] = (LambdaConstants.MAX_STORAGE_SIZE + 1).toString()
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                )
+            )
+        )
+    }
+
+    @Test
+    @Throws(Exception::class)
     fun testProcess_IamRoleNotFound() {
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
@@ -266,6 +308,7 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         properties[AWSCommonParams.REGION_NAME_PARAM] = REGION_NAME
         properties[LambdaConstants.SCRIPT_CONTENT_PARAM] = SCRIPT_CONTENT
         properties[LambdaConstants.MEMORY_SIZE_PARAM] = MEMORY_SIZE
+        properties[LambdaConstants.STORAGE_SIZE_PARAM] = STORAGE_SIZE
         properties[LambdaConstants.IAM_ROLE_PARAM] = IAM_ROLE
         return properties
     }
@@ -280,6 +323,7 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         const val BAD_URL = "badUrl"
         const val SCRIPT_CONTENT = "scriptContent"
         const val MEMORY_SIZE = "512"
+        const val STORAGE_SIZE = "1024"
 
         const val USER_ARN = "${LambdaConstants.IAM_PREFIX}::accountId:user"
         const val IAM_ROLE_NAME = "iamRole"
