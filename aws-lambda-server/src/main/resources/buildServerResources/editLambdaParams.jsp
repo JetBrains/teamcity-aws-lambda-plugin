@@ -17,6 +17,9 @@
 <%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
 
 <%@include file="paramsConstants.jspf" %>
+<jsp:useBean id="propertiesBean" scope="request" type="jetbrains.buildServer.controllers.BasePropertiesBean"/>
+
+<c:set var="selected_iam_role" value="${propertiesBean.properties[iam_role_param]}"/>
 
 <jsp:include page="editAWSCommonParams.jsp">
     <jsp:param name="requireRegion" value="${true}"/>
@@ -86,7 +89,7 @@
         const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
         const iamRoleError = $j(BS.Util.escapeId('error_${iam_role_param}'));
         const createIamRoleButton = $j(BS.Util.escapeId('${iam_role_create_button}'));
-
+        const selectedIamRole = '${selected_iam_role}'
 
         let rolesList;
 
@@ -98,9 +101,13 @@
 
         function drawRolesOptions(rolesList) {
             let rolesWithoutDefault
-            if (rolesList.defaultRole) {
+            if (selectedIamRole.length !== 0){
+              const selectedIamRoleSettings = rolesList.iamRoleList.find(role => role.roleArn === selectedIamRole);
+              addOptionToSelector(iamRoleInput, selectedIamRoleSettings.roleArn, selectedIamRoleSettings.roleName);
+              rolesWithoutDefault = rolesList.iamRoleList.filter(role => role.roleArn !== selectedIamRole);
+            } else if (rolesList.defaultRole) {
                 addOptionToSelector(iamRoleInput, rolesList.defaultRole.roleArn, rolesList.defaultRole.roleName)
-                rolesWithoutDefault = rolesList.iamRoleList.filter(role => role.roleArn.indexOf(rolesList.defaultRole.roleArn) === -1)
+                rolesWithoutDefault = rolesList.iamRoleList.filter(role => !role.roleArn.endsWith(rolesList.defaultRole.roleArn))
             } else {
                 addOptionToSelector(iamRoleInput, "${iam_role_default_option}", "${iam_role_default_option}")
                 rolesWithoutDefault = rolesList.iamRoleList
