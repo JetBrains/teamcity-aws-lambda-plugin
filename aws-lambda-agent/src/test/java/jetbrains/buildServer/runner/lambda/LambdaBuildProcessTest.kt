@@ -116,7 +116,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
                     )
                 )
                 allowing(buildParametersMap).environmentVariables
-                will(returnValue(ENV_PARAMS))
 
                 allowing(context).workingDirectory
                 will(
@@ -137,7 +136,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
                         PASSWORD,
                         BUILD_ID,
                         URL,
-                        ENV_PARAMS,
                         CUSTOM_SCRIPT_FILENAME,
                         DIRECTORY_ID
                     )
@@ -186,7 +184,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
                     )
                 )
                 allowing(buildParametersMap).environmentVariables
-                will(returnValue(ENV_PARAMS))
 
                 allowing(context).workingDirectory
                 will(
@@ -207,7 +204,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
                         PASSWORD,
                         BUILD_ID,
                         URL,
-                        ENV_PARAMS,
                         CUSTOM_SCRIPT_FILENAME,
                         DIRECTORY_ID
                     )
@@ -265,7 +261,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val PASSWORD = "password"
         private const val URL = "url"
         private const val BUILD_ID = "buildId"
-        private val ENV_PARAMS = mapOf(Pair("key", "value"))
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
         private const val DIRECTORY_ID = "directoryId"
         private const val PROJECT_NAME = "projectName"

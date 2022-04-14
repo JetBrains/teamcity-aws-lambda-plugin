@@ -32,7 +32,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         m = Mockery()
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, ENV_PARAMS, SCRIPT_CONTENT, DIRECTORY_ID)
+        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID)
         context = m.mock(Context::class.java)
         logger = m.mock(LambdaLogger::class.java)
 
@@ -215,7 +215,6 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         private const val BUILD_ID = "buildId"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
-        private val ENV_PARAMS = emptyMap<String, String>()
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
 

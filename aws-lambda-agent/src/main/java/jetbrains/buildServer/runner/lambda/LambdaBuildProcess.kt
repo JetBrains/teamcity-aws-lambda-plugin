@@ -64,7 +64,6 @@ class LambdaBuildProcess(
         password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
         buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
         teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
-        envParams = context.buildParameters.environmentVariables,
         customScriptFilename = scriptContentFilename,
         directoryId = directoryId
     )

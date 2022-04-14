@@ -43,7 +43,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         logger = m.mock(LambdaLogger::class.java)
         detachedBuildApi = m.mock(DetachedBuildApi::class.java)
         workingDirectory = m.mock(File::class.java)
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, ENV_PARAMS, SCRIPT_CONTENT, DIRECTORY_ID)
+        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID)
     }
 
     @AfterMethod
@@ -157,9 +157,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         val generalCommandLine = LambdaCommandLine.createCommandLine(workingDirectory, runDetails)
         Assert.assertEquals(generalCommandLine.exePath, "/bin/bash")
         Assert.assertEquals(generalCommandLine.workDirectory, workingDirectory)
-        val env = System.getenv().toMutableMap()
-        env.remove("JAVA_HOME")
-        Assert.assertEquals(generalCommandLine.envParams, ENV_PARAMS + env)
+        Assert.assertEquals(generalCommandLine.envParams, System.getenv())
         Assert.assertEquals(
             generalCommandLine.parametersList.list,
             listOf("$ABSOLUTE_PATH/${runDetails.customScriptFilename}")
@@ -171,7 +169,6 @@ class LambdaCommandLineTest : BaseTestCase() {
         private const val BUILD_ID = "buildId"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
-        private val ENV_PARAMS = mapOf(Pair("key", "value"))
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
         private const val ABSOLUTE_PATH = "absolutePath"
