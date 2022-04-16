@@ -1,2 +1,4 @@
 # Gradle Specific Env Var
 ENV GRADLE_USER_HOME="/tmp"
+ENV ORG_GRADLE_PROJECT_org.gradle.vfs.watch=false
+ENV ORG_GRADLE_PROJECT_org.gradle.unsafe.watch-fs=false
