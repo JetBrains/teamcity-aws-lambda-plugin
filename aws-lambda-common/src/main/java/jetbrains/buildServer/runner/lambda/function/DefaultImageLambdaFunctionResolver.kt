@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import java.io.FileNotFoundException
 
@@ -12,7 +13,7 @@ class DefaultImageLambdaFunctionResolver(
         iamRole: String,
         lambdaStorage: Int,
         functionImage: String,
-        logger: BuildProgressLogger,
+        logger: Logger,
         awsLambda: AWSLambda,
         lambdaFunctionName: String,
         private val workingDirectoryTransfer: S3WorkingDirectoryTransfer) :

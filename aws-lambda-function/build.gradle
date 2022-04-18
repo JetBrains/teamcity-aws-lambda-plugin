@@ -45,7 +45,7 @@ task copyRuntimeDependencies(type: Copy) {
 }
 
 build.dependsOn copyRuntimeDependencies
-final resourcesDir = file("$rootDir/aws-lambda-agent/src/main/resources")
+final resourcesDir = file("$rootDir/aws-lambda-common/src/main/resources")
 
 
 import org.gradle.crypto.checksum.Checksum

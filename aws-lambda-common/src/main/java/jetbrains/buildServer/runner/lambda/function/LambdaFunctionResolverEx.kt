@@ -4,14 +4,14 @@ import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import com.amazonaws.waiters.WaiterParameters
 import jetbrains.buildServer.agent.BuildProgressLogger
-import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.directory.Logger
 
 abstract class LambdaFunctionResolverEx(
         protected val lambdaMemory: Int,
         protected val iamRole: String,
         protected val lambdaStorage: Int,
         protected val functionImage: String,
-        protected val logger: BuildProgressLogger,
+        protected val logger: Logger,
         protected val awsLambda: AWSLambda,
         protected val lambdaFunctionName: String) : LambdaFunctionResolver {
     override fun resolveFunction(): String {

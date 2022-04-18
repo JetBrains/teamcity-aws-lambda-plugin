@@ -37,7 +37,7 @@ class LambdaRunner : AgentBuildRunner {
             UnixCommandLinePreparer(context, logger),
             LambdaFunctionResolverFactoryImpl(
                 context,
-                logger,
+                genericLogger,
                 awsLambda,
                 workingDirectoryTransfer,
             ),

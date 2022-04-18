@@ -1,5 +1,6 @@
 package jetbrains.buildServer.runner.lambda.function
 
+import MockLoggerObject.mockBuildLogger
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.AWSLambdaException
 import com.amazonaws.services.lambda.model.GetFunctionRequest
@@ -10,7 +11,7 @@ import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
-import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 import org.jmock.Expectations
 import org.jmock.Mockery
@@ -31,7 +32,7 @@ class LambdaFunctionResolverFactoryImplTest: BaseTestCase(){
     protected lateinit var resourceNotFoundException: ResourceNotFoundException
     protected lateinit var waiters: AWSLambdaWaiters
     protected lateinit var waiter: Waiter<GetFunctionRequest>
-    protected lateinit var logger: BuildProgressLogger
+    protected lateinit var logger: Logger
     protected lateinit var workingDirectoryTransfer: S3WorkingDirectoryTransfer
 
     @AfterMethod

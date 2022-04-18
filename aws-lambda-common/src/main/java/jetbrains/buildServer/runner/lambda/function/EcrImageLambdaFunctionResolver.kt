@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.*
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 
 class EcrImageLambdaFunctionResolver(
@@ -11,7 +12,7 @@ class EcrImageLambdaFunctionResolver(
         iamRole: String,
         lambdaStorage: Int,
         functionImage: String,
-        logger: BuildProgressLogger,
+        logger: Logger,
         awsLambda: AWSLambda,
         lambdaFunctionName: String,
         private val workingDirectoryTransfer: WorkingDirectoryTransfer) : LambdaFunctionResolverEx(lambdaMemory, iamRole, lambdaStorage, functionImage, logger, awsLambda, lambdaFunctionName) {

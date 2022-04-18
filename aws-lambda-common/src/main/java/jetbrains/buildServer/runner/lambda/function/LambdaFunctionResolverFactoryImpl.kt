@@ -4,11 +4,12 @@ import com.amazonaws.services.lambda.AWSLambda
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransfer
 
 class LambdaFunctionResolverFactoryImpl(
         private val context: BuildRunnerContext,
-        private val logger: BuildProgressLogger,
+        private val logger: Logger,
         private val awsLambda: AWSLambda,
         private val workingDirectoryTransfer: S3WorkingDirectoryTransfer
 ) : LambdaFunctionResolverFactory {
