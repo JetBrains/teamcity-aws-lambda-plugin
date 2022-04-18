@@ -1,18 +1,14 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
-import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverEx
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactory
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.api.Invocation
@@ -24,18 +20,16 @@ import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var context: BuildRunnerContext
-    private lateinit var awsLambda: AWSLambda
-    private lateinit var objectMapper: ObjectMapper
     private lateinit var buildParametersMap: BuildParametersMap
     private lateinit var workingDirectoryTransfer: WorkingDirectoryTransfer
     private lateinit var workingDirectory: File
     private lateinit var commandLinePreparer: CommandLinePreparer
-    private lateinit var lambdaFunctionResolverFactory: LambdaFunctionResolverFactory
-    private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
+    private lateinit var lambdaFunctionInvoker: LambdaFunctionInvoker
     private lateinit var logger: BuildProgressLogger
     private lateinit var build: AgentRunningBuild
     private lateinit var archiveManager: ArchiveManager
@@ -50,18 +44,16 @@ class LambdaBuildProcessTest : BaseTestCase() {
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
         context = m.mock(BuildRunnerContext::class.java)
-        awsLambda = m.mock(AWSLambda::class.java)
-        objectMapper = m.mock(ObjectMapper::class.java)
         buildParametersMap = m.mock(BuildParametersMap::class.java)
         workingDirectoryTransfer = m.mock(WorkingDirectoryTransfer::class.java)
         workingDirectory = m.mock(File::class.java, "WorkingDirectory")
         commandLinePreparer = m.mock(CommandLinePreparer::class.java)
-        lambdaFunctionResolverFactory = m.mock(LambdaFunctionResolverFactory::class.java)
-        lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
+        lambdaFunctionInvoker = m.mock(LambdaFunctionInvoker::class.java)
         logger = m.mockBuildLogger()
         build = m.mock(AgentRunningBuild::class.java)
         archiveManager = m.mock(ArchiveManager::class.java)
         workingDirectoryArchive = m.mock(File::class.java, "WorkingDirectoryArchive")
+
 
         m.checking(object : Expectations() {
             init {
@@ -69,12 +61,12 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(buildParametersMap))
                 allowing(buildParametersMap).allParameters
                 will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.USERNAME_SYSTEM_PROPERTY, USERNAME),
-                            Pair(LambdaConstants.PASSWORD_SYSTEM_PROPERTY, PASSWORD),
+                        returnValue(
+                                mapOf(
+                                        Pair(LambdaConstants.USERNAME_SYSTEM_PROPERTY, USERNAME),
+                                        Pair(LambdaConstants.PASSWORD_SYSTEM_PROPERTY, PASSWORD),
+                                )
                         )
-                    )
                 )
 
                 allowing(context).build
@@ -103,27 +95,26 @@ class LambdaBuildProcessTest : BaseTestCase() {
             init {
                 allowing(context).configParameters
                 will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
-                            Pair(LambdaConstants.TEAMCITY_SERVER_URL, URL),
+                        returnValue(
+                                mapOf(
+                                        Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
+                                        Pair(LambdaConstants.TEAMCITY_SERVER_URL, URL),
+                                )
                         )
-                    )
                 )
 
                 allowing(buildParametersMap).systemProperties
                 will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
+                        returnValue(
+                                mapOf(
+                                        Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
+                                )
                         )
-                    )
                 )
-                allowing(buildParametersMap).environmentVariables
 
                 allowing(context).workingDirectory
                 will(
-                    returnValue(workingDirectory)
+                        returnValue(workingDirectory)
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
                 will(returnValue(CUSTOM_SCRIPT_FILENAME))
@@ -131,29 +122,15 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(workingDirectoryArchive))
                 oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
                 will(returnValue(DIRECTORY_ID))
-                oneOf(lambdaFunctionResolverFactory).getLambdaFunctionResolver()
-                will(returnValue(lambdaFunctionResolver))
-                oneOf(lambdaFunctionResolver).resolveFunction()
-                will(returnValue(FUNCTION_NAME))
-
-                allowing(objectMapper).writeValueAsString(
-                    RunDetails(
+                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(RunDetails(
                         USERNAME,
                         PASSWORD,
                         BUILD_ID,
                         URL,
                         CUSTOM_SCRIPT_FILENAME,
                         DIRECTORY_ID
-                    )
-                )
-                will(returnValue(OBJECT_STRING))
-
-                oneOf(awsLambda).invoke(
-                    InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
-                        .withPayload(
-                            OBJECT_STRING
-                        )
-                )
+                ))
+                will(returnValue(false))
             }
         })
 
@@ -162,81 +139,6 @@ class LambdaBuildProcessTest : BaseTestCase() {
         Assert.assertEquals(buildProcess.waitFor(), BuildFinishedStatus.FINISHED_DETACHED)
         Assert.assertTrue(buildProcess.isFinished)
         Assert.assertFalse(buildProcess.isInterrupted)
-    }
-
-    @Test
-    @Throws(Exception::class)
-    fun testWaitFor_MidwayInterruptedBuild() {
-        val buildProcess = createBuildProcess()
-
-        m.checking(object : Expectations() {
-            init {
-                allowing(context).configParameters
-                will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
-                            Pair(LambdaConstants.TEAMCITY_SERVER_URL, URL),
-                        )
-                    )
-                )
-
-                allowing(buildParametersMap).systemProperties
-                will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
-                        )
-                    )
-                )
-                allowing(buildParametersMap).environmentVariables
-
-                allowing(context).workingDirectory
-                will(
-                    returnValue(workingDirectory)
-                )
-                oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
-                will(returnValue(CUSTOM_SCRIPT_FILENAME))
-                oneOf(archiveManager).archiveDirectory(workingDirectory)
-                will(returnValue(workingDirectoryArchive))
-                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
-                will(returnValue(DIRECTORY_ID))
-                oneOf(lambdaFunctionResolverFactory).getLambdaFunctionResolver()
-                will(returnValue(lambdaFunctionResolver))
-                oneOf(lambdaFunctionResolver).resolveFunction()
-                will(returnValue(FUNCTION_NAME))
-
-                allowing(objectMapper).writeValueAsString(
-                    RunDetails(
-                        USERNAME,
-                        PASSWORD,
-                        BUILD_ID,
-                        URL,
-                        CUSTOM_SCRIPT_FILENAME,
-                        DIRECTORY_ID
-                    )
-                )
-                will(object : CustomAction("Interrupts process") {
-                    override fun invoke(invocation: Invocation): Any {
-                        buildProcess.interrupt()
-                        return OBJECT_STRING
-                    }
-                })
-
-                never(awsLambda).invoke(
-                    InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
-                        .withPayload(
-                            OBJECT_STRING
-                        )
-                )
-            }
-        })
-
-        val status = buildProcess.waitFor()
-        Assert.assertEquals(status, BuildFinishedStatus.INTERRUPTED)
-        Assert.assertEquals(buildProcess.waitFor(), BuildFinishedStatus.INTERRUPTED)
-        Assert.assertTrue(buildProcess.isInterrupted)
-        Assert.assertFalse(buildProcess.isFinished)
     }
 
     @Test
@@ -253,18 +155,16 @@ class LambdaBuildProcessTest : BaseTestCase() {
     }
 
     private fun createBuildProcess() = LambdaBuildProcess(
-        context,
-        logger,
-        awsLambda,
-        objectMapper,
-        workingDirectoryTransfer,
-        commandLinePreparer,
-        lambdaFunctionResolverFactory,
-        archiveManager
+            context,
+            logger,
+            workingDirectoryTransfer,
+            commandLinePreparer,
+            archiveManager,
+            lambdaFunctionInvoker,
+            AtomicBoolean()
     )
 
     companion object {
-        private const val OBJECT_STRING = "objectString"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
         private const val URL = "url"

@@ -1,9 +1,5 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.lambda.AWSLambda
-import com.amazonaws.services.lambda.model.InvocationType
-import com.amazonaws.services.lambda.model.InvokeRequest
-import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.agent.BuildFinishedStatus
 import jetbrains.buildServer.agent.BuildProcess
 import jetbrains.buildServer.agent.BuildProgressLogger
@@ -11,22 +7,20 @@ import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactory
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
         private val context: BuildRunnerContext,
         private val logger: BuildProgressLogger,
-        private val awsLambda: AWSLambda,
-        private val objectMapper: ObjectMapper,
         private val workingDirectoryTransfer: WorkingDirectoryTransfer,
         private val commandLinePreparer: CommandLinePreparer,
-        private val lambdaFunctionResolverFactoryImpl: LambdaFunctionResolverFactory,
-        private val archiveManager: ArchiveManager
+        private val archiveManager: ArchiveManager,
+        private val lambdaFunctionInvoker: LambdaFunctionInvoker,
+        private val myIsInterrupted: AtomicBoolean
 ) :
         BuildProcess {
 
-    private val myIsInterrupted: AtomicBoolean = AtomicBoolean()
     private val myIsFinished: AtomicBoolean = AtomicBoolean()
 
     private fun executeTask(): BuildFinishedStatus {
@@ -38,20 +32,7 @@ class LambdaBuildProcess(
         val directoryId = workingDirectoryTransfer.upload(key, workingDirectoryTar)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
-        val functionName = lambdaFunctionResolverFactoryImpl.getLambdaFunctionResolver().resolveFunction()
-
-        logger.message("Creating request for lambda function")
-        val invokeRequest = InvokeRequest()
-                .withFunctionName(functionName)
-                .withInvocationType(InvocationType.Event)
-                .withPayload(objectMapper.writeValueAsString(runDetails))
-
-        if (isInterrupted) {
-            return BuildFinishedStatus.INTERRUPTED
-        }
-
-        logger.message("Adding request to event queue")
-        awsLambda.invoke(invokeRequest)
+        if (lambdaFunctionInvoker.invokeLambdaFunction(runDetails)) return BuildFinishedStatus.INTERRUPTED
         myIsFinished.set(true)
         return BuildFinishedStatus.FINISHED_DETACHED
     }

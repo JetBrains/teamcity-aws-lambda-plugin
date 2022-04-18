@@ -14,8 +14,10 @@ import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactoryImpl
+import jetbrains.buildServer.runner.lambda.function.LocalLambdaFunctionInvoker
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
+import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaRunner : AgentBuildRunner {
     override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess {
@@ -28,49 +30,52 @@ class LambdaRunner : AgentBuildRunner {
         }
 
         val workingDirectoryTransfer = S3WorkingDirectoryTransferImpl(genericLogger, getTransferManager(context))
+        val myIsInterrupted = AtomicBoolean()
         return LambdaBuildProcess(
-            context,
-            logger,
-            awsLambda,
-            jacksonObjectMapper(),
-            workingDirectoryTransfer,
-            UnixCommandLinePreparer(context, logger),
-            LambdaFunctionResolverFactoryImpl(
                 context,
-                genericLogger,
-                awsLambda,
+                logger,
                 workingDirectoryTransfer,
-            ),
-            TarArchiveManager(genericLogger)
+                UnixCommandLinePreparer(context, logger),
+                TarArchiveManager(genericLogger),
+                LocalLambdaFunctionInvoker(
+                        logger, jacksonObjectMapper(), myIsInterrupted, awsLambda,
+                        LambdaFunctionResolverFactoryImpl(
+                                context,
+                                genericLogger,
+                                awsLambda,
+                                workingDirectoryTransfer,
+                        ),
+                ),
+                myIsInterrupted
         )
     }
 
     private fun getLambdaClient(context: BuildRunnerContext) =
-        withAWSClients<AWSLambda, Exception>(context.runnerParameters) { clients ->
-            val clientBuilder = AWSLambdaClientBuilder.standard()
-                .withClientConfiguration(clients.clientConfiguration)
-                .withCredentials(getCredentialsProvider(context.runnerParameters))
+            withAWSClients<AWSLambda, Exception>(context.runnerParameters) { clients ->
+                val clientBuilder = AWSLambdaClientBuilder.standard()
+                        .withClientConfiguration(clients.clientConfiguration)
+                        .withCredentials(getCredentialsProvider(context.runnerParameters))
 
-            if (context.runnerParameters.containsKey(LAMBDA_ENDPOINT_URL_PARAM)) {
-                clientBuilder.withEndpointConfiguration(
-                    AwsClientBuilder.EndpointConfiguration(
-                        context.runnerParameters[LAMBDA_ENDPOINT_URL_PARAM],
-                        clients.region
+                if (context.runnerParameters.containsKey(LAMBDA_ENDPOINT_URL_PARAM)) {
+                    clientBuilder.withEndpointConfiguration(
+                            AwsClientBuilder.EndpointConfiguration(
+                                    context.runnerParameters[LAMBDA_ENDPOINT_URL_PARAM],
+                                    clients.region
+                            )
                     )
-                )
-            } else {
-                clientBuilder.withRegion(clients.region)
+                } else {
+                    clientBuilder.withRegion(clients.region)
+                }
+
+                clientBuilder.build()
             }
 
-            clientBuilder.build()
-        }
-
     private fun getTransferManager(context: BuildRunnerContext) =
-        withAWSClients<TransferManager, Exception>(context.runnerParameters) { clients ->
-            TransferManagerBuilder.standard()
-                .withS3Client(clients.createS3Client())
-                .build()
-        }
+            withAWSClients<TransferManager, Exception>(context.runnerParameters) { clients ->
+                TransferManagerBuilder.standard()
+                        .withS3Client(clients.createS3Client())
+                        .build()
+            }
 
 
     override fun getRunnerInfo(): AgentBuildRunnerInfo = object : AgentBuildRunnerInfo {
