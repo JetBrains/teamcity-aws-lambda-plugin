@@ -11,20 +11,20 @@ import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolver
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(
-    private val context: BuildRunnerContext,
-    private val logger: BuildProgressLogger,
-    private val awsLambda: AWSLambda,
-    private val objectMapper: ObjectMapper,
-    private val workingDirectoryTransfer: WorkingDirectoryTransfer,
-    private val commandLinePreparer: CommandLinePreparer,
-    private val lambdaFunctionResolver: LambdaFunctionResolver,
-    private val archiveManager: ArchiveManager
+        private val context: BuildRunnerContext,
+        private val logger: BuildProgressLogger,
+        private val awsLambda: AWSLambda,
+        private val objectMapper: ObjectMapper,
+        private val workingDirectoryTransfer: WorkingDirectoryTransfer,
+        private val commandLinePreparer: CommandLinePreparer,
+        private val lambdaFunctionResolverFactoryImpl: LambdaFunctionResolverFactory,
+        private val archiveManager: ArchiveManager
 ) :
-    BuildProcess {
+        BuildProcess {
 
     private val myIsInterrupted: AtomicBoolean = AtomicBoolean()
     private val myIsFinished: AtomicBoolean = AtomicBoolean()
@@ -38,13 +38,13 @@ class LambdaBuildProcess(
         val directoryId = workingDirectoryTransfer.upload(key, workingDirectoryTar)
 
         val runDetails = getRunDetails(directoryId, scriptContentFilename)
-        val functionName = lambdaFunctionResolver.resolveFunction()
+        val functionName = lambdaFunctionResolverFactoryImpl.getLambdaFunctionResolver().resolveFunction()
 
         logger.message("Creating request for lambda function")
         val invokeRequest = InvokeRequest()
-            .withFunctionName(functionName)
-            .withInvocationType(InvocationType.Event)
-            .withPayload(objectMapper.writeValueAsString(runDetails))
+                .withFunctionName(functionName)
+                .withInvocationType(InvocationType.Event)
+                .withPayload(objectMapper.writeValueAsString(runDetails))
 
         if (isInterrupted) {
             return BuildFinishedStatus.INTERRUPTED
@@ -57,15 +57,15 @@ class LambdaBuildProcess(
     }
 
     private fun getKey(): String =
-        "${context.build.buildTypeId}-${context.build.buildId}"
+            "${context.build.buildTypeId}-${context.build.buildId}"
 
     private fun getRunDetails(directoryId: String, scriptContentFilename: String): RunDetails = RunDetails(
-        username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
-        password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
-        buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
-        teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
-        customScriptFilename = scriptContentFilename,
-        directoryId = directoryId
+            username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
+            password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
+            buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
+            teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
+            customScriptFilename = scriptContentFilename,
+            directoryId = directoryId
     )
 
     override fun start() {}
