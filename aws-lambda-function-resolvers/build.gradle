@@ -11,11 +11,15 @@ buildscript {
 }
 
 dependencies {
+    compile project(':aws-lambda-common')
     testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
     compile 'com.amazonaws:aws-java-sdk-s3:1.12.196'
+    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
     compile 'org.apache.commons:commons-compress:1.21'
 }
 
 repositories {
     mavenCentral()
 }
+
+project.tasks.compileKotlin.dependsOn ':aws-lambda-function:shadowJar'

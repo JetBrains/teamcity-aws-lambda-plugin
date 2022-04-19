@@ -2,6 +2,7 @@ apply plugin: 'com.github.rodm.teamcity-agent'
 
 dependencies {
     compile project(':aws-lambda-common')
+    compile project(':aws-lambda-function-resolvers')
 
     testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
     compile 'com.amazonaws:aws-java-sdk-lambda:1.12.199'

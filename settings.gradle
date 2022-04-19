@@ -3,4 +3,5 @@ include 'aws-lambda-agent'
 include 'aws-lambda-server'
 include 'aws-lambda-function'
 include 'aws-lambda-common'
+include 'aws-lambda-function-resolvers'
 
