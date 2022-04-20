@@ -12,6 +12,7 @@ import jetbrains.buildServer.runner.lambda.build.LambdaCommandLine
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking

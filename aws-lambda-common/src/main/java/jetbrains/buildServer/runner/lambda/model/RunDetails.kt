@@ -1,4 +1,4 @@
-package jetbrains.buildServer.runner.lambda
+package jetbrains.buildServer.runner.lambda.model
 
 data class RunDetails(
     val username: String,

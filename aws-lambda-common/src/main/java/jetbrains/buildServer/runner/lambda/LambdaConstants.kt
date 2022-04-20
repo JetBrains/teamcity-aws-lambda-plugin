@@ -15,15 +15,19 @@ object LambdaConstants {
     const val LAMBDA_PLUGIN_PATH = "/plugins/aws-lambda-plugin"
     const val IAM_ROLES_LIST_PATH = "iam/list.html"
     const val IAM_ROLES_CREATE_PATH = "iam.html"
+    const val INVOKE_LAMBDA_PATH = "lambda.html"
 
     const val TIMEOUT_BUILD_PROBLEM_TYPE = "LAMBDA_TIMEOUT"
+    const val LAMBDA_INVOCATION_ERROR = "LAMBDA_INVOCATION_ERROR"
 
     const val USERNAME_SYSTEM_PROPERTY = "system.teamcity.auth.userId"
     const val PASSWORD_SYSTEM_PROPERTY = "system.teamcity.auth.password"
+    const val BUILD_TYPE_SYSTEM_PROPERTY = "system.teamcity.buildType.id"
     const val TEAMCITY_SERVER_URL = "teamcity.serverUrl"
     const val TEAMCITY_BUILD_ID = "teamcity.build.id"
     const val TEAMCITY_PROJECT_NAME = "teamcity.projectName"
     const val TEAMCITY_VERSION = "teamcity.version"
+    const val BUILD_ID = "buildId"
 
 
     const val LAMBDA_SETTINGS_STEP = "lambda_settings_settings"

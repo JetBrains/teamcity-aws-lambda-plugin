@@ -1,23 +1,21 @@
 package jetbrains.buildServer.runner.lambda
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.ktor.client.engine.cio.*
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.aws.AWSConnectionAwsClientFetcher
+import jetbrains.buildServer.runner.lambda.aws.AgentAWSConnectionAwsClientFetcher
+import jetbrains.buildServer.runner.lambda.aws.RemoteLambdaFunctionInvoker
 import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactoryImpl
-import jetbrains.buildServer.runner.lambda.function.LocalLambdaFunctionInvoker
-import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
-import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaRunner : AgentBuildRunner {
     override fun createBuildProcess(runningBuild: AgentRunningBuild, context: BuildRunnerContext): BuildProcess {
-        val awsClientFetcher = AWSConnectionAwsClientFetcher(context)
+        val awsClientFetcher = AgentAWSConnectionAwsClientFetcher(context.runnerParameters)
         val awsLambda = awsClientFetcher.getAWSLambdaClient()
         val logger = runningBuild.buildLogger
         val genericLogger = object : Logger {
@@ -34,15 +32,16 @@ class LambdaRunner : AgentBuildRunner {
                 workingDirectoryTransfer,
                 UnixCommandLinePreparer(context, logger),
                 TarArchiveManager(genericLogger),
-                LocalLambdaFunctionInvoker(
-                        logger, jacksonObjectMapper(), myIsInterrupted, awsLambda,
-                        LambdaFunctionResolverFactoryImpl(
-                                context,
-                                genericLogger,
-                                awsLambda,
-                                workingDirectoryTransfer,
-                        ),
-                ),
+                RemoteLambdaFunctionInvoker(genericLogger, context, jacksonObjectMapper(), CIO.create()),
+//                LocalLambdaFunctionInvoker(
+//                        genericLogger, jacksonObjectMapper(), myIsInterrupted, awsLambda,
+//                        LambdaFunctionResolverFactoryImpl(
+//                                genericLogger,
+//                                awsLambda,
+//                                workingDirectoryTransfer,
+//                                context.runnerParameters,
+//                        ),
+//                ),
                 myIsInterrupted
         )
     }

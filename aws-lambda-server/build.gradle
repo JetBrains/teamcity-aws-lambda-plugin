@@ -18,11 +18,13 @@ apply plugin: 'com.github.rodm.teamcity-server'
 
 dependencies {
     compile project(':aws-lambda-common')
+    compile project(':aws-lambda-function-resolvers')
 
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
     compile "org.jetbrains.teamcity:oauth:${teamcityVersion}"
     compileOnly "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
     compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
+    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
     compile 'commons-validator:commons-validator:1.7'
     compile 'com.amazonaws:aws-java-sdk-iam:1.12.196'
     compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'

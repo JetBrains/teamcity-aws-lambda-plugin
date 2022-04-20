@@ -4,12 +4,12 @@ import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
-import jetbrains.buildServer.agent.BuildProgressLogger
-import jetbrains.buildServer.runner.lambda.RunDetails
+import jetbrains.buildServer.runner.lambda.model.RunDetails
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LocalLambdaFunctionInvoker(
-        private val logger: BuildProgressLogger,
+        private val logger: Logger,
         private val objectMapper: ObjectMapper,
         private val isInterrupted: AtomicBoolean,
         private val awsLambda: AWSLambda,

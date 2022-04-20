@@ -23,6 +23,7 @@
     <bean id="lambdaRunnerRunType" class="jetbrains.buildServer.runner.lambda.LambdaRunType"/>
     <bean class="jetbrains.buildServer.runner.lambda.web.LambdaIamRolesListController"/>
     <bean class="jetbrains.buildServer.runner.lambda.web.LambaDefaultIamRoleCreateController"/>
+    <bean class="jetbrains.buildServer.runner.lambda.web.InvokeLambdaFunctionController"/>
     <bean class="jetbrains.buildServer.runner.lambda.LambdaBuildProblemTypes"/>
     <bean id="deploymentStatusProvider" class="jetbrains.buildServer.runner.lambda.LambdaDeploymentStatusProvider"/>
 </beans>

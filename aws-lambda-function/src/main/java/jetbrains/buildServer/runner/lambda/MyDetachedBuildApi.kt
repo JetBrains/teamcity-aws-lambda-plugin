@@ -10,15 +10,16 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.http.content.*
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.*
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class MyDetachedBuildApi(
-    runDetails: RunDetails,
-    context: Context,
-    engine: HttpClientEngine,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+        runDetails: RunDetails,
+        context: Context,
+        engine: HttpClientEngine,
+        private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : DetachedBuildApi {
     private val logger = context.logger
 

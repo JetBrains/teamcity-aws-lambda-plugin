@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger
 import com.intellij.execution.configurations.GeneralCommandLine
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.DetachedBuildApi
-import jetbrains.buildServer.runner.lambda.RunDetails
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
 import org.jmock.Mockery

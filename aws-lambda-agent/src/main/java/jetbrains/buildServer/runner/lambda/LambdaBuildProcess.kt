@@ -8,6 +8,7 @@ import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LambdaBuildProcess(

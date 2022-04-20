@@ -1,14 +1,14 @@
 package jetbrains.buildServer.runner.lambda.function
 
+import MockLoggerObject.mockBuildLogger
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
-import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
-import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
-import jetbrains.buildServer.runner.lambda.RunDetails
+import jetbrains.buildServer.runner.lambda.model.RunDetails
+import jetbrains.buildServer.runner.lambda.directory.Logger
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class LocalLambdaFunctionInvokerTest : BaseTestCase() {
     private lateinit var m: Mockery
-    private lateinit var logger: BuildProgressLogger
+    private lateinit var logger: Logger
     private lateinit var objectMapper: ObjectMapper
     private lateinit var awsLambda: AWSLambda
     private lateinit var lambdaFunctionResolverFactory: LambdaFunctionResolverFactory

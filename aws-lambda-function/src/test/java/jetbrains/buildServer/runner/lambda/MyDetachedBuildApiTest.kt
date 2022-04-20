@@ -8,6 +8,7 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.build.ProcessFailedException
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
 import org.jmock.Mockery

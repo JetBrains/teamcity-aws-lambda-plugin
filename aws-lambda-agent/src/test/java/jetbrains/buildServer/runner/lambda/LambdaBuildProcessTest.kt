@@ -1,7 +1,5 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.services.lambda.model.InvocationType
-import com.amazonaws.services.lambda.model.InvokeRequest
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
@@ -9,10 +7,9 @@ import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import org.jmock.Expectations
 import org.jmock.Mockery
-import org.jmock.api.Invocation
-import org.jmock.lib.action.CustomAction
 import org.jmock.lib.concurrent.Synchroniser
 import org.jmock.lib.legacy.ClassImposteriser
 import org.testng.Assert

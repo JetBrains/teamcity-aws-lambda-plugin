@@ -29,6 +29,7 @@ ext.teamcityJavaHome = System.properties['java.home']
 ext.amazonUtilVersion = hasProperty('amazon.util.version') ? property('amazon.util.version') : teamcityVersion
 
 ext.kotlin_version = '1.6.10'
+ext.ktor_version= '2.0.0'
 
 apply plugin: 'idea'
 idea {
