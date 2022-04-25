@@ -45,6 +45,7 @@ Where `region` is the AWS region where this image should be pushed to and `image
 - gradle
 - maven
 - node14
+- node16
 - python3_10
 
 The execution of the script assumes that the AWS CLI has been installed and that it is logged in into the account.
