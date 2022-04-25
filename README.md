@@ -33,6 +33,22 @@ The following IAM actions are required from the role assigned to the lambda func
 - iam:GetRole
 - iam:ListRoles
 
+## Template Images
+The project currently holds several template container images in the `images` folder. These can be used within a build step. Due to the limitations of AWS Lambda, this container must be available through a private ECR. In order to speed up this process,  the `upload_images.sh` script is provided that can be used in the following way:
+
+```bash
+./upload_images.sh <region> <image_name>
+
+```
+
+Where `region` is the AWS region where this image should be pushed to and `image_name` is the name of the image to build, which can currently be:
+- gradle
+- maven
+- node14
+- python3_10
+
+The execution of the script assumes that the AWS CLI has been installed and that it is logged in into the account.
+
 ## License
 
 Apache 2.0
