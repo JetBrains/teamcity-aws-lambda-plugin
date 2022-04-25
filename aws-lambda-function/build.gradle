@@ -16,20 +16,20 @@ plugins {
 ext.ktor_version= '2.0.0'
 
 dependencies {
-    compile project(':aws-lambda-common')
+    implementation project(':aws-lambda-common')
 
-    compile 'com.amazonaws:aws-lambda-java-core:1.2.1'
-    compile 'com.amazonaws:aws-lambda-java-events:3.11.0'
-    compile 'com.amazonaws:aws-lambda-java-runtime-interface-client:2.1.0'
-    compile "org.jetbrains.teamcity:agent-api:$teamcityVersion"
-    compile "org.jetbrains.teamcity.internal:agent:${teamcityVersion}"
-    compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
-    compile "io.ktor:ktor-client-core:$ktor_version"
-    compile "io.ktor:ktor-client-logging-jvm:$ktor_version"
-    compile "io.ktor:ktor-client-auth:$ktor_version"
-    compile "io.ktor:ktor-client-cio:$ktor_version"
-    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
-    testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.0'
+    implementation 'com.amazonaws:aws-lambda-java-runtime-interface-client:2.1.0'
+    implementation "org.jetbrains.teamcity:agent-api:$teamcityVersion"
+    implementation "org.jetbrains.teamcity.internal:agent:${teamcityVersion}"
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
+    implementation "io.ktor:ktor-client-core:$ktor_version"
+    implementation "io.ktor:ktor-client-logging-jvm:$ktor_version"
+    implementation "io.ktor:ktor-client-auth:$ktor_version"
+    implementation "io.ktor:ktor-client-cio:$ktor_version"
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
+    testImplementation "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
     testImplementation "io.ktor:ktor-client-mock:$ktor_version"
 }
 
