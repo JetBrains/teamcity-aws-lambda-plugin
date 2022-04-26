@@ -1,15 +1,3 @@
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "com.github.rodm:gradle-teamcity-plugin:1.0"
-    }
-}
-
-
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.5.10'
     id 'java'
@@ -22,7 +10,7 @@ repositories {
     mavenCentral()
 }
 
-ext.teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2021.2'
+ext.teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2021.1'
 ext.teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
 ext.teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
 ext.teamcityJavaHome = System.properties['java.home']
@@ -38,7 +26,7 @@ idea {
 }
 
 subprojects {
-    group = 'jetbrains.buildServer.codedeploy'
+    group = 'jetbrains.buildServer.lambda'
 }
 
 configure(subprojects) {

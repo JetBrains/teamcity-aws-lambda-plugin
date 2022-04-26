@@ -11,4 +11,5 @@ generate_image(){
 generate_image gradle
 generate_image maven
 generate_image node14
+generate_image node16
 generate_image python3_10

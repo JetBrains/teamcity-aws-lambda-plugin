@@ -4,7 +4,7 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
-import jetbrains.buildServer.clouds.amazon.connector.errors.features.NoLinkedAwsConnectionIdParameter
+import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
@@ -79,7 +79,7 @@ class LambdaPropertiesProcessor(
                 properties[LambdaConstants.AWS_ACCESS_KEY_ID] = credentialsProvider.credentials.awsAccessKeyId
                 properties[LambdaConstants.AWS_SECRET_ACCESS_KEY] = credentialsProvider.credentials.awsSecretKey
                 properties[LambdaConstants.AWS_REGION] = region
-            } catch (e: NoLinkedAwsConnectionIdParameter) {
+            } catch (e: LinkedAwsConnNotFoundException) {
                 invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "No connection $connectionId found"
             }
         }

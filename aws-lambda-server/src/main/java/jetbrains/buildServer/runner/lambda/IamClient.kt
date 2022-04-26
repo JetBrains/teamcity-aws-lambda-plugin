@@ -3,7 +3,7 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
-import jetbrains.buildServer.clouds.amazon.connector.errors.features.NoLinkedAwsConnectionIdParameter
+import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
 import jetbrains.buildServer.runner.lambda.web.JsonControllerException
@@ -20,7 +20,7 @@ object IamClient {
             return AmazonIdentityManagementClientBuilder.standard()
                     .withCredentials(credentialsProvider)
                     .build()
-        } catch (e: NoLinkedAwsConnectionIdParameter) {
+        } catch (e: LinkedAwsConnNotFoundException) {
             throw JsonControllerException(e.localizedMessage, HttpStatus.BAD_REQUEST);
         }
     }

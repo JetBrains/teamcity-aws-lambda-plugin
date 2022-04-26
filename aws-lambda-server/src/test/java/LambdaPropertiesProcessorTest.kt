@@ -8,7 +8,7 @@ import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import com.amazonaws.services.identitymanagement.model.User
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
-import jetbrains.buildServer.clouds.amazon.connector.errors.features.NoLinkedAwsConnectionException
+import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.clouds.amazon.connector.impl.dataBeans.AwsConnectionBean
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
@@ -37,6 +37,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     private lateinit var project: SProject
     private lateinit var awsConnectionsManager: AwsConnectionsManager
     private lateinit var awsConnectionBean: AwsConnectionBean
+    private lateinit var awsCredentialsProvider: AWSCredentialsProvider
+    private lateinit var awsCredentials: AWSCredentials
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -52,6 +54,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         project = m.mock(SProject::class.java)
         awsConnectionsManager = m.mock(AwsConnectionsManager::class.java)
         awsConnectionBean = m.mock(AwsConnectionBean::class.java)
+        awsCredentialsProvider = m.mock(AWSCredentialsProvider::class.java)
+        awsCredentials = BasicAWSCredentials(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
     }
 
     private fun verifyIamRole() {
@@ -78,12 +82,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
                 will(returnValue(project))
                 oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
                 will(returnValue(awsConnectionBean))
-                allowing(awsConnectionBean).properties
-                will(returnValue(mapOf(
-                        Pair(AwsAccessKeysParams.ACCESS_KEY_ID_PARAM, ACCESS_KEY_ID),
-                        Pair(AwsAccessKeysParams.SECURE_SECRET_ACCESS_KEY_PARAM, SECRET_ACCESS_KEY),
-                        Pair(AwsCloudConnectorConstants.REGION_NAME_PARAM, REGION_NAME)
-                )))
+                allowing(awsConnectionBean).credentialsProvider
+                will(returnValue(awsCredentialsProvider))
+                allowing(awsCredentialsProvider).credentials
+                will(returnValue(awsCredentials))
+                oneOf(awsConnectionBean).region
+                will(returnValue(REGION_NAME))
             }
         })
     }
@@ -214,13 +218,13 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Throws(Exception::class)
     fun testProcess_StorageSizeNotNumber() {
         verifyIamRole()
-        ensureCredentialsProvided()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
 
         properties[LambdaConstants.STORAGE_SIZE_PARAM] = "error"
 
+        ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
             invalidProperties.contains(
@@ -243,6 +247,7 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         properties[LambdaConstants.STORAGE_SIZE_PARAM] = (LambdaConstants.MAX_STORAGE_SIZE + 1).toString()
 
+        ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
             invalidProperties.contains(
@@ -367,7 +372,7 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
                 oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
                 will(returnValue(project))
                 oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
-                will(throwException(NoLinkedAwsConnectionException("Mock exception")))
+                will(throwException(LinkedAwsConnNotFoundException("Mock exception")))
             }
         })
 

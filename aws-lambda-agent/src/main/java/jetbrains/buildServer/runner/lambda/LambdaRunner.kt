@@ -8,7 +8,6 @@ import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverImpl
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactoryImpl
 import jetbrains.buildServer.util.amazon.AWSCommonParams.getCredentialsProvider
 import jetbrains.buildServer.util.amazon.AWSCommonParams.withAWSClients

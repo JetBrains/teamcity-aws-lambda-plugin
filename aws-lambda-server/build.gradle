@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-apply plugin: 'com.github.rodm.teamcity-server'
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins{
+    id "com.github.rodm.teamcity-server" version "1.4.1"
+}
 
 dependencies {
-    compile project(':aws-lambda-common')
+    implementation project(':aws-lambda-common')
 
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
-    compile "org.jetbrains.teamcity:oauth:${teamcityVersion}"
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}-MEIAS"
+    implementation 'commons-validator:commons-validator:1.7'
+    implementation 'com.amazonaws:aws-java-sdk-iam:1.12.196'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
+    implementation "org.jetbrains.teamcity:oauth:${teamcityVersion}"
     compileOnly "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
-    compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
-    compile 'commons-validator:commons-validator:1.7'
-    compile 'com.amazonaws:aws-java-sdk-iam:1.12.196'
-    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
+    agent project(path: ':aws-lambda-agent', configuration: 'plugin')
 }
 
 sourceCompatibility = "1.8"
@@ -44,19 +56,17 @@ teamcity {
                 version = teamcityVersion
             }
         }
+
+        publish {
+            channels = ['Beta']
+            token = findProperty('jetbrains.token')
+        }
     }
 
     version = teamcityVersion
 }
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
