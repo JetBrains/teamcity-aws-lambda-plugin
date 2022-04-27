@@ -10,13 +10,18 @@ repositories {
     mavenCentral()
 }
 
-ext.teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2021.1'
-ext.teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
-ext.teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
-ext.teamcityJavaHome = System.properties['java.home']
-ext.amazonUtilVersion = hasProperty('amazon.util.version') ? property('amazon.util.version') : teamcityVersion
+ext {
+    teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2021.1'
+    teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
+    teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
+    teamcityJavaHome = System.properties['java.home']
+    amazonUtilVersion = 'release-99472-108-g0cf34a4-SNAPSHOT'
+    kotlin_version = '1.6.10'
+    mavenRepositoryUser = findProperty('maven.repository.user')
+    mavenRepositoryPassword = findProperty('maven.repository.password')
+}
 
-ext.kotlin_version = '1.6.10'
+
 
 apply plugin: 'idea'
 idea {
@@ -50,6 +55,13 @@ configure(subprojects) {
         mavenCentral()
         maven {
             url = 'https://repository.jetbrains.com/all'
+        }
+        maven {
+            url = 'https://packages.jetbrains.team/maven/p/tc/maven'
+            credentials {
+                username = mavenRepositoryUser
+                password = mavenRepositoryPassword
+            }
         }
     }
 
