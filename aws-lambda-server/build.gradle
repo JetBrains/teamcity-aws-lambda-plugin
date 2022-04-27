@@ -31,11 +31,12 @@ dependencies {
     implementation project(':aws-lambda-common')
 
     compileOnly "org.jetbrains.teamcity.internal:server:${teamcityVersion}"
-    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}-MEIAS"
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     implementation 'commons-validator:commons-validator:1.7'
     implementation 'com.amazonaws:aws-java-sdk-iam:1.12.196'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
-    implementation "org.jetbrains.teamcity:oauth:${teamcityVersion}"
+    compileOnly "org.jetbrains.teamcity:oauth:${teamcityVersion}"
+    testImplementation "org.jetbrains.teamcity:oauth:${teamcityVersion}"
     compileOnly "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
     agent project(path: ':aws-lambda-agent', configuration: 'plugin')
 }

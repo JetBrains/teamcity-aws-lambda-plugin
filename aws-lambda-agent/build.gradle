@@ -19,7 +19,7 @@ dependencies {
     implementation 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
     implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.196'
     implementation 'com.amazonaws:aws-java-sdk-ecrpublic:1.12.196'
-    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}-MEIAS"
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
 }
 
