@@ -1,30 +1,3 @@
-apply plugin: 'com.github.rodm.teamcity-agent'
-
-dependencies {
-    compile project(':aws-lambda-common')
-    compile project(':aws-lambda-function-resolvers')
-
-    testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
-    compile 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
-    compile 'com.amazonaws:aws-java-sdk-ecr:1.12.196'
-    compile 'com.amazonaws:aws-java-sdk-ecrpublic:1.12.196'
-    compile "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
-    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
-    compile "io.ktor:ktor-client-core:$ktor_version"
-    compile "io.ktor:ktor-client-logging-jvm:$ktor_version"
-    compile "io.ktor:ktor-client-auth:$ktor_version"
-    compile "io.ktor:ktor-client-cio:$ktor_version"
-    compile "io.ktor:ktor-client-content-negotiation:$ktor_version"
-    compile "io.ktor:ktor-serialization-jackson:$ktor_version"
-}
-
-teamcity {
-    agent {
-        descriptor = project(':aws-lambda-agent').file('teamcity-plugin.xml')
-    }
-
-    version = teamcityVersion
-}
 buildscript {
     repositories {
         mavenCentral()
@@ -35,6 +8,37 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.github.rodm.teamcity-agent" version "1.4.1"
+}
+
+dependencies {
+    implementation project(':aws-lambda-common')
+    implementation project(':aws-lambda-function-resolvers')
+
+    testImplementation "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
+    implementation 'com.amazonaws:aws-java-sdk-lambda:1.12.199'
+    implementation 'com.amazonaws:aws-java-sdk-ecr:1.12.196'
+    implementation 'com.amazonaws:aws-java-sdk-ecrpublic:1.12.196'
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
+    implementation "io.ktor:ktor-client-core:$ktor_version"
+    implementation "io.ktor:ktor-client-logging-jvm:$ktor_version"
+    implementation "io.ktor:ktor-client-auth:$ktor_version"
+    implementation "io.ktor:ktor-client-cio:$ktor_version"
+    implementation "io.ktor:ktor-client-content-negotiation:$ktor_version"
+    implementation "io.ktor:ktor-serialization-jackson:$ktor_version"
+}
+
+teamcity {
+    agent {
+        descriptor = project(':aws-lambda-agent').file('teamcity-plugin.xml')
+    }
+
+    version = teamcityVersion
+}
+
 repositories {
+    mavenLocal()
     mavenCentral()
 }

@@ -1,20 +1,25 @@
 import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.GetUserResult
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import com.amazonaws.services.identitymanagement.model.User
 import jetbrains.buildServer.BaseTestCase
+import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.clouds.amazon.connector.impl.dataBeans.AwsConnectionBean
+import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.LambdaPropertiesProcessor
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.SProject
+import jetbrains.buildServer.serverSide.oauth.OAuthConnectionDescriptor
+import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -32,8 +37,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     private lateinit var project: SProject
     private lateinit var awsConnectionsManager: AwsConnectionsManager
     private lateinit var awsConnectionBean: AwsConnectionBean
-    private lateinit var credentialsProvider: AWSCredentialsProvider
-    private lateinit var credentials: AWSCredentials
+    private lateinit var awsCredentialsProvider: AWSCredentialsProvider
+    private lateinit var awsCredentials: AWSCredentials
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -49,8 +54,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         project = m.mock(SProject::class.java)
         awsConnectionsManager = m.mock(AwsConnectionsManager::class.java)
         awsConnectionBean = m.mock(AwsConnectionBean::class.java)
-        credentialsProvider = m.mock(AWSCredentialsProvider::class.java)
-        credentials = m.mock(AWSCredentials::class.java)
+        awsCredentialsProvider = m.mock(AWSCredentialsProvider::class.java)
+        awsCredentials = BasicAWSCredentials(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
     }
 
     private fun verifyIamRole() {
@@ -78,13 +83,9 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
                 oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
                 will(returnValue(awsConnectionBean))
                 allowing(awsConnectionBean).credentialsProvider
-                will(returnValue(credentialsProvider))
-                allowing(credentialsProvider).credentials
-                will(returnValue(credentials))
-                allowing(credentials).awsAccessKeyId
-                will(returnValue(ACCESS_KEY_ID))
-                allowing(credentials).awsSecretKey
-                will(returnValue(SECRET_ACCESS_KEY))
+                will(returnValue(awsCredentialsProvider))
+                allowing(awsCredentialsProvider).credentials
+                will(returnValue(awsCredentials))
                 oneOf(awsConnectionBean).region
                 will(returnValue(REGION_NAME))
             }
@@ -203,8 +204,14 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
-        Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.MEMORY_SIZE_PARAM, LambdaConstants.MEMORY_SIZE_VALUE_ERROR)))
-        ensureCredentialsAreInjected(properties)
+        Assert.assertTrue(
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.MEMORY_SIZE_PARAM,
+                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+                )
+            )
+        )
     }
 
     @Test
@@ -217,15 +224,17 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         properties[LambdaConstants.STORAGE_SIZE_PARAM] = "error"
 
+        ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-                invalidProperties.contains(
-                        InvalidProperty(
-                                LambdaConstants.STORAGE_SIZE_PARAM,
-                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
-                        )
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
                 )
+            )
         )
+        ensureCredentialsAreInjected(properties)
     }
 
     @Test
@@ -238,14 +247,15 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         properties[LambdaConstants.STORAGE_SIZE_PARAM] = (LambdaConstants.MAX_STORAGE_SIZE + 1).toString()
 
+        ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-                invalidProperties.contains(
-                        InvalidProperty(
-                                LambdaConstants.STORAGE_SIZE_PARAM,
-                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
-                        )
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
                 )
+            )
         )
     }
 
@@ -380,8 +390,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
                     Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
                     Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE),
                     Pair(LambdaConstants.PROJECT_ID_PARAM, PROJECT_ID),
-                    Pair(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, CONNECTION_ID),
-                    Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE)
+                    Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE),
+                    Pair(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, CONNECTION_ID)
             )
 
     companion object {

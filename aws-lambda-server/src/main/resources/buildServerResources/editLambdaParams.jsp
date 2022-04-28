@@ -24,7 +24,7 @@
 <jsp:useBean id="buildForm"  scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 
 
-<jsp:include page="awsConnection/availableAwsConnections.jsp">
+<jsp:include page="awsConnection/availableAwsConnections/availableAwsConnections.jsp">
     <jsp:param name="projectId" value="${buildForm.project.externalId}"/>
 </jsp:include>
 
@@ -99,10 +99,11 @@
         const iamRoleInput = $j(BS.Util.escapeId('${iam_role_param}'))
         const iamRoleError = $j(BS.Util.escapeId('error_${iam_role_param}'));
         const createIamRoleButton = $j(BS.Util.escapeId('${iam_role_create_button}'));
-        const selectedIamRole = '${selected_iam_role}'
         const selectId = BS.Util.escape('${avail_connections_select_id}');
         const availableConnectionsSelectId = "#" + selectId;
         const availableConnectionsInput = "#-ufd-teamcity-ui-" + selectId;
+        const chosenConnectionId = "&prop%3A" + '${chosen_aws_conn_id}';
+        const selectedIamRole = '${selected_iam_role}'
 
         let rolesList;
 
@@ -146,15 +147,15 @@
 
         function loadIamRoles() {
             const selectedConnection = $j(availableConnectionsInput).val()
-            if (!selectedConnection || selectedConnection.empty()){
+            const parameters = getParameters();
+            if (!selectedConnection || selectedConnection.empty() || parameters.indexOf(chosenConnectionId) == -1){
                 return;
             }
             BS.ErrorsAwareListener.onBeginSave(BS.EditBuildRunnerForm);
-            const parameters = getParameters();
             loadingChanges()
             $j.post(window['base_uri'] + '${plugin_path}/${iam_roles_list_path}', parameters)
                 .then(function (response) {
-                    rolesList = $(response)
+                    rolesList = response
                     clearForms();
 
                     drawRolesOptions(rolesList)
@@ -176,6 +177,10 @@
 
 
         $j(availableConnectionsSelectId).change(function () {
+            loadIamRoles();
+        });
+
+        $j(availableConnectionsSelectId).on("DOMNodeInserted", function () {
             loadIamRoles();
         });
 

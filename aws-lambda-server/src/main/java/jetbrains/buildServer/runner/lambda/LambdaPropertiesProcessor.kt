@@ -3,8 +3,10 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
+import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
+import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
@@ -54,7 +56,7 @@ class LambdaPropertiesProcessor(
         when (properties[LambdaConstants.STORAGE_SIZE_PARAM]?.toIntOrNull()) {
             null -> invalids[LambdaConstants.STORAGE_SIZE_PARAM] = LambdaConstants.STORAGE_SIZE_ERROR
             !in LambdaConstants.MIN_STORAGE_SIZE..LambdaConstants.MAX_STORAGE_SIZE -> invalids[LambdaConstants.STORAGE_SIZE_PARAM] =
-                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
         }
 
         val iamRole = properties[LambdaConstants.IAM_ROLE_PARAM]

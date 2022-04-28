@@ -1,5 +1,3 @@
-apply plugin: 'com.github.rodm.teamcity-agent'
-
 buildscript {
     repositories {
         mavenCentral()
@@ -10,10 +8,15 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.github.rodm.teamcity-agent" version "1.4.1"
+}
+
+
 dependencies {
-    testCompile "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
-    compile 'com.amazonaws:aws-java-sdk-s3:1.12.196'
-    compile 'org.apache.commons:commons-compress:1.21'
+    testImplementation "org.jetbrains.teamcity:tests-support:${teamcityVersion}"
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.196'
+    implementation 'org.apache.commons:commons-compress:1.21'
 }
 
 repositories {
