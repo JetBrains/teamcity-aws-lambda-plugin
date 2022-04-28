@@ -11,7 +11,7 @@ repositories {
 }
 
 ext {
-    teamcityVersion = hasProperty('teamcity.version') ? property('teamcity.version') : '2021.1'
+    teamcityVersion = '2021.1'
     teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
     teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
     teamcityJavaHome = System.properties['java.home']
