@@ -1,3 +1,5 @@
+package jetbrains.buildServer.runner.lambda
+
 import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.BasicAWSCredentials
@@ -205,12 +207,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-            invalidProperties.contains(
-                InvalidProperty(
-                    LambdaConstants.MEMORY_SIZE_PARAM,
-                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+                invalidProperties.contains(
+                        InvalidProperty(
+                                LambdaConstants.MEMORY_SIZE_PARAM,
+                                LambdaConstants.MEMORY_SIZE_VALUE_ERROR
+                        )
                 )
-            )
         )
     }
 
@@ -227,12 +229,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-            invalidProperties.contains(
-                InvalidProperty(
-                    LambdaConstants.STORAGE_SIZE_PARAM,
-                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                invalidProperties.contains(
+                        InvalidProperty(
+                                LambdaConstants.STORAGE_SIZE_PARAM,
+                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                        )
                 )
-            )
         )
         ensureCredentialsAreInjected(properties)
     }
@@ -250,12 +252,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-            invalidProperties.contains(
-                InvalidProperty(
-                    LambdaConstants.STORAGE_SIZE_PARAM,
-                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                invalidProperties.contains(
+                        InvalidProperty(
+                                LambdaConstants.STORAGE_SIZE_PARAM,
+                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
+                        )
                 )
-            )
         )
     }
 

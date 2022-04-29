@@ -73,25 +73,29 @@ abstract class JsonController<T : Any>(
     abstract fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): T
 
     override fun doHandle(request: HttpServletRequest, response: HttpServletResponse): ModelAndView? {
+        return handle(request, response)
+    }
+
+    internal fun handle(request: HttpServletRequest, response: HttpServletResponse): ModelAndView? {
         if (!allowedMethods.contains(request.method)) {
             return error405(response)
         }
 
         val settingsId =
-            request.getParameter(BUILD_TYPE_ID) ?: return error400(response, "Missing parameter $BUILD_TYPE_ID")
+                request.getParameter(BUILD_TYPE_ID) ?: return error400(response, "Missing parameter $BUILD_TYPE_ID")
 
-        val buildTypeId = if (settingsId.startsWith(BUILD_TYPE_PREFIX)){
+        val buildTypeId = if (settingsId.startsWith(BUILD_TYPE_PREFIX)) {
             settingsId.substring(BUILD_TYPE_PREFIX.length)
         } else {
             settingsId
         }
 
         val buildType = projectManager.findBuildTypeByExternalId(buildTypeId)
-            ?: return error404(response, "Build Type $buildTypeId not found")
+                ?: return error404(response, "Build Type $buildTypeId not found")
 
         val projectId = buildType.projectId
         val project = projectManager.findProjectById(projectId)
-            ?: return error404(response, "Project for Build Type $buildType not found")
+                ?: return error404(response, "Project for Build Type $buildType not found")
 
         permissionsChecking(accessManager, project)
 
@@ -106,8 +110,8 @@ abstract class JsonController<T : Any>(
     }
 
     companion object {
-        private const val BUILD_TYPE_ID = "id"
-        private const val BUILD_TYPE_PREFIX = "buildType:"
+        internal const val BUILD_TYPE_ID = "id"
+        internal const val BUILD_TYPE_PREFIX = "buildType:"
 
         val editProjectPermissions: AccessChecker.(SProject) -> Unit = {project ->
             checkCanEditProject(project)

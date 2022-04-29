@@ -5,14 +5,8 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import jetbrains.buildServer.BuildProblemData
-import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.runner.lambda.LambdaConstants
-import jetbrains.buildServer.runner.lambda.aws.ServerAWSConnectionAwsClientFetcher
-import jetbrains.buildServer.runner.lambda.directory.Logger
-import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
-import jetbrains.buildServer.runner.lambda.function.LambdaFunctionResolverFactoryImpl
-import jetbrains.buildServer.runner.lambda.function.LocalLambdaFunctionInvoker
+import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvokerFactory
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.RunningBuildsManager
@@ -26,9 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.springframework.http.HttpStatus
 import java.util.*
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.servlet.http.HttpServletRequest
-import kotlin.coroutines.CoroutineContext
 
 class InvokeLambdaFunctionController(
         descriptor: PluginDescriptor,
@@ -36,36 +28,10 @@ class InvokeLambdaFunctionController(
         projectManager: ProjectManager,
         accessManager: AccessChecker,
         private val runningBuildsManager: RunningBuildsManager,
-        private val awsConnectionsManager: AwsConnectionsManager//TODO: Figure out how to check for permissions for agent
-) : JsonController<Boolean>(descriptor, controllerManager, projectManager, accessManager, LambdaConstants.INVOKE_LAMBDA_PATH, setOf(METHOD_POST), permissionsChecking = {}) {
+        private val lambdaFunctionInvokerFactory: LambdaFunctionInvokerFactory //TODO: Figure out how to check for permissions for agent
+) : JsonController<Boolean>(descriptor, controllerManager, projectManager, accessManager, LambdaConstants.INVOKE_LAMBDA_PATH, ALLOWED_METHODS, permissionsChecking = {}) {
     val objectMapper by lazy {
         jacksonObjectMapper()
-    }
-
-
-    private fun getLambdaFunctionInvoker(properties: Map<String, String>, project: SProject): LambdaFunctionInvoker {
-        val clientFetcher = ServerAWSConnectionAwsClientFetcher(awsConnectionsManager, properties, project)
-        val awsLambda = clientFetcher.getAWSLambdaClient()
-        val logger = object : Logger {
-            override fun message(message: String?) {
-                println(message)
-            }
-        }
-
-        return LocalLambdaFunctionInvoker(
-                logger,
-                objectMapper,
-                AtomicBoolean(),
-                awsLambda,
-                LambdaFunctionResolverFactoryImpl(
-                        logger,
-                        awsLambda,
-                        S3WorkingDirectoryTransferImpl(
-                                logger,
-                                clientFetcher.getTransferManager()
-                        ),
-                        properties)
-        )
     }
 
     override fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): Boolean {
@@ -75,7 +41,9 @@ class InvokeLambdaFunctionController(
 
         return try {
             val runDetails = objectMapper.readValue<RunDetails>(serializedDetails)
-            getLambdaFunctionInvoker(properties, project).invokeLambdaFunction(runDetails)
+            lambdaFunctionInvokerFactory
+                    .getLambdaFunctionInvoker(properties, project)
+                    .invokeLambdaFunction(runDetails)
         } catch (e: JsonProcessingException) {
             stopBuild(builId, e)
             throw JsonControllerException("Error processing $RUN_DETAILS parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
@@ -92,21 +60,21 @@ class InvokeLambdaFunctionController(
         val build = runningBuildsManager.findRunningBuildById(buildId) ?: return
         CoroutineScope(Dispatchers.IO).launch {
             build.addBuildProblem(BuildProblemData.createBuildProblem(
-                    e::class.java.name,
+                    e::class.java.simpleName,
                     LambdaConstants.LAMBDA_INVOCATION_ERROR,
                     e.localizedMessage
             ))
-            while (!build.isDetachedFromAgent){
+            while (!build.isDetachedFromAgent) {
                 delay(DELAY_MILLISECONDS)
             }
 
             build.finish(Date())
         }
-
     }
 
     companion object {
-        private const val RUN_DETAILS = "runDetails"
-        private const val DELAY_MILLISECONDS = 1000L
+        internal const val RUN_DETAILS = "runDetails"
+        internal const val DELAY_MILLISECONDS = 1000L
+        internal val ALLOWED_METHODS = setOf(METHOD_POST)
     }
 }
