@@ -32,7 +32,7 @@ dependencies {
     implementation project(':aws-lambda-function-resolvers')
 
 
-    compileOnly "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
+    implementation "jetbrains.buildServer.util:amazon-util:${amazonUtilVersion}"
     implementation 'commons-validator:commons-validator:1.7'
     implementation 'com.amazonaws:aws-java-sdk-iam:1.12.196'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.2'
