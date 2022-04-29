@@ -26,7 +26,4 @@
     <bean class="jetbrains.buildServer.runner.lambda.web.InvokeLambdaFunctionController"/>
     <bean class="jetbrains.buildServer.runner.lambda.LambdaBuildProblemTypes"/>
     <bean id="deploymentStatusProvider" class="jetbrains.buildServer.runner.lambda.LambdaDeploymentStatusProvider"/>
-    <bean class="jetbrains.buildServer.clouds.amazon.connector.impl.staticType.StaticCredentialsBuilder"/>
-    <bean class="jetbrains.buildServer.clouds.amazon.connector.impl.AwsConnectorFactoryImpl" />
-    <bean class="jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager" />
 </beans>
