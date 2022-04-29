@@ -45,10 +45,7 @@ dependencies {
     compileOnly "org.jetbrains.teamcity:oauth:${teamcityVersion}"
     testImplementation "org.jetbrains.teamcity:oauth:${teamcityVersion}"
     compileOnly "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
-//    if (teamcityVersion == "SNAPSHOT"){
-//        compileOnly(dir: teamcityLibs, include: ['*.jar'])
-//    } else {
-//    }
+    testImplementation "org.jetbrains.teamcity.internal:web:${teamcityVersion}"
 }
 
 sourceCompatibility = "1.8"

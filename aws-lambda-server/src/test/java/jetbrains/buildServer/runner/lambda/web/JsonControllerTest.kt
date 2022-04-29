@@ -1,10 +1,14 @@
 package jetbrains.buildServer.runner.lambda.web
 
 import jetbrains.buildServer.BaseTestCase
+import jetbrains.buildServer.controllers.AuthorizationInterceptor
+import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.SBuildType
 import jetbrains.buildServer.serverSide.SProject
+import jetbrains.buildServer.serverSide.SecurityContextEx
 import jetbrains.buildServer.serverSide.auth.AccessChecker
+import jetbrains.buildServer.serverSide.auth.SecurityContext
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
 import org.jmock.Expectations
@@ -16,7 +20,6 @@ import org.springframework.http.MediaType
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
-import java.io.ByteArrayOutputStream
 import javax.servlet.ServletOutputStream
 import javax.servlet.WriteListener
 import javax.servlet.http.HttpServletRequest
@@ -34,6 +37,8 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
     protected lateinit var response: HttpServletResponse
     protected lateinit var buildType: SBuildType
     protected lateinit var project: SProject
+    protected lateinit var authorizationInterceptor: AuthorizationInterceptor
+    protected lateinit var securityContext: SecurityContextEx
     protected val synchroniser = Synchroniser()
 
     abstract fun createController(): T
@@ -60,12 +65,21 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
         response = m.mock(HttpServletResponse::class.java)
         buildType = m.mock(SBuildType::class.java)
         project = m.mock(SProject::class.java)
+        authorizationInterceptor = m.mock(AuthorizationInterceptor::class.java)
+        securityContext = m.mock(SecurityContextEx::class.java)
 
         m.checking(object : Expectations() {
             init {
                 oneOf(descriptor).getPluginResourcesPath(path)
                 will(returnValue(PLUGIN_RESOURCE_PATH))
-                oneOf(controllerManager).registerController(with(PLUGIN_RESOURCE_PATH), with(any(JsonController::class.java)))
+                oneOf(authorizationInterceptor)
+                        .addPathBasedPermissionsChecker(
+                                with(PLUGIN_RESOURCE_PATH),
+                                with(any(JsonController::class.java)))
+                oneOf(controllerManager)
+                        .registerController(
+                                with(PLUGIN_RESOURCE_PATH),
+                                with(any(JsonController::class.java)))
             }
         })
     }
@@ -82,7 +96,7 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
     protected fun mockGettingBuildType() {
         m.checking(object : Expectations() {
             init {
-                oneOf(request).getParameter(JsonController.BUILD_TYPE_ID)
+                oneOf(request).getParameter(LambdaConstants.BUILD_TYPE_ID)
                 will(returnValue(BUILD_TYPE_ID))
             }
         })
@@ -125,7 +139,7 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
         })
     }
 
-    private val servletOutputStream: ServletOutputStream = object : ServletOutputStream(){
+    private val servletOutputStream: ServletOutputStream = object : ServletOutputStream() {
         override fun write(b: Int) {
         }
 
@@ -196,7 +210,7 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
         mockAllowedMethods()
         m.checking(object : Expectations() {
             init {
-                oneOf(request).getParameter(JsonController.BUILD_TYPE_ID)
+                oneOf(request).getParameter(LambdaConstants.BUILD_TYPE_ID)
                 will(returnValue(null))
             }
         })
@@ -238,6 +252,10 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
     abstract fun testControllerHandle()
 
     abstract fun getDefaultProperties(): Map<String, String>
+
+    abstract fun testCheckPermissions()
+
+    abstract fun testCheckPermissions_Failed()
 
     companion object {
         const val PLUGIN_RESOURCE_PATH = "pluginResourcePath"

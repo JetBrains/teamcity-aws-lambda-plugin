@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import jetbrains.buildServer.BuildProblemData
+import jetbrains.buildServer.controllers.AuthorizationInterceptor
+import jetbrains.buildServer.controllers.agent.AgentFinder
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvokerFactory
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.RunningBuildsManager
 import jetbrains.buildServer.serverSide.SProject
+import jetbrains.buildServer.serverSide.SecurityContextEx
 import jetbrains.buildServer.serverSide.auth.AccessChecker
+import jetbrains.buildServer.serverSide.auth.AccessDeniedException
 import jetbrains.buildServer.web.openapi.PluginDescriptor
 import jetbrains.buildServer.web.openapi.WebControllerManager
 import kotlinx.coroutines.CoroutineScope
@@ -27,15 +31,17 @@ class InvokeLambdaFunctionController(
         controllerManager: WebControllerManager,
         projectManager: ProjectManager,
         accessManager: AccessChecker,
+        authInterceptor: AuthorizationInterceptor,
         private val runningBuildsManager: RunningBuildsManager,
-        private val lambdaFunctionInvokerFactory: LambdaFunctionInvokerFactory //TODO: Figure out how to check for permissions for agent
-) : JsonController<Boolean>(descriptor, controllerManager, projectManager, accessManager, LambdaConstants.INVOKE_LAMBDA_PATH, ALLOWED_METHODS, permissionsChecking = {}) {
+        private val lambdaFunctionInvokerFactory: LambdaFunctionInvokerFactory,
+        private val agentFinder: AgentFinder
+) : JsonController<Boolean>(descriptor, controllerManager, authInterceptor, projectManager, accessManager, LambdaConstants.INVOKE_LAMBDA_PATH, ALLOWED_METHODS) {
     val objectMapper by lazy {
         jacksonObjectMapper()
     }
 
     override fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): Boolean {
-        val serializedDetails = request.getParameter(RUN_DETAILS) ?: throw JsonControllerException("Parameter missing: $RUN_DETAILS", HttpStatus.BAD_REQUEST)
+        val serializedDetails = request.getParameter(LambdaConstants.RUN_DETAILS) ?: throw JsonControllerException("Parameter missing: ${LambdaConstants.RUN_DETAILS}", HttpStatus.BAD_REQUEST)
         val builId = request.getParameter(LambdaConstants.BUILD_ID)?.toLong()
                 ?: throw JsonControllerException("Parameter missing: ${LambdaConstants.BUILD_ID}", HttpStatus.BAD_REQUEST)
 
@@ -46,14 +52,19 @@ class InvokeLambdaFunctionController(
                     .invokeLambdaFunction(runDetails)
         } catch (e: JsonProcessingException) {
             stopBuild(builId, e)
-            throw JsonControllerException("Error processing $RUN_DETAILS parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
+            throw JsonControllerException("Error processing ${LambdaConstants.RUN_DETAILS} parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
         } catch (e: JsonMappingException) {
             stopBuild(builId, e)
-            throw JsonControllerException("Error mapping $RUN_DETAILS parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
+            throw JsonControllerException("Error mapping ${LambdaConstants.RUN_DETAILS} parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
         } catch (e: Exception) {
             stopBuild(builId, e)
             throw JsonControllerException("Unexpecte error found: ${e.localizedMessage}", HttpStatus.INTERNAL_SERVER_ERROR)
         }
+    }
+
+    override fun checkPermissions(securityContext: SecurityContextEx, request: HttpServletRequest) {
+        agentFinder.findAgent(request)
+                ?: throw AccessDeniedException(securityContext.authorityHolder, "Request has not been called from an agent")
     }
 
     private fun stopBuild(buildId: Long, e: Exception) {
@@ -73,7 +84,6 @@ class InvokeLambdaFunctionController(
     }
 
     companion object {
-        internal const val RUN_DETAILS = "runDetails"
         internal const val DELAY_MILLISECONDS = 1000L
         internal val ALLOWED_METHODS = setOf(METHOD_POST)
     }

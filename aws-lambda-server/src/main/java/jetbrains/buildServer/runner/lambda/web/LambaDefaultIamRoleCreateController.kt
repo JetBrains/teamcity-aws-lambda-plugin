@@ -4,11 +4,13 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
 import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
+import jetbrains.buildServer.controllers.AuthorizationInterceptor
 import jetbrains.buildServer.runner.lambda.IamClient
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.model.IamRole
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.SProject
+import jetbrains.buildServer.serverSide.SecurityContextEx
 import jetbrains.buildServer.serverSide.auth.AccessChecker
 import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import jetbrains.buildServer.web.openapi.PluginDescriptor
@@ -21,9 +23,10 @@ class LambaDefaultIamRoleCreateController(
         controllerManager: WebControllerManager,
         projectManager: ProjectManager,
         accessManager: AccessChecker,
+        authInterceptor: AuthorizationInterceptor,
         private val awsConnectionsManager: AwsConnectionsManager
 ) : JsonController<IamRole>(
-        descriptor, controllerManager, projectManager, accessManager, LambdaConstants.IAM_ROLES_CREATE_PATH, setOf(
+        descriptor, controllerManager, authInterceptor, projectManager, accessManager, LambdaConstants.IAM_ROLES_CREATE_PATH, setOf(
         METHOD_POST
 )
 ) {
@@ -35,6 +38,11 @@ class LambaDefaultIamRoleCreateController(
             throw JsonControllerException(e.errorMessage, HttpStatus.valueOf(e.statusCode))
         }
 
+    }
+
+    override fun checkPermissions(securityContext: SecurityContextEx, request: HttpServletRequest) {
+        val project = getProject(request)
+        securityContext.accessChecker.checkCanEditProject(project)
     }
 
     private fun createRole(iam: AmazonIdentityManagement): IamRole {

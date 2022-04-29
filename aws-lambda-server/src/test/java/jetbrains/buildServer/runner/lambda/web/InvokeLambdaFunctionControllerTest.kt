@@ -3,12 +3,15 @@ package jetbrains.buildServer.runner.lambda.web
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.BuildProblemData
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
+import jetbrains.buildServer.controllers.agent.AgentFinder
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvokerFactory
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import jetbrains.buildServer.serverSide.RunningBuildsManager
+import jetbrains.buildServer.serverSide.SBuildAgent
 import jetbrains.buildServer.serverSide.SRunningBuild
+import jetbrains.buildServer.serverSide.auth.AccessDeniedException
 import org.hamcrest.Matcher
 import org.jmock.AbstractExpectations
 import org.jmock.Expectations
@@ -25,6 +28,8 @@ class InvokeLambdaFunctionControllerTest
     private lateinit var myLambdaFunctionInvokerFactory: LambdaFunctionInvokerFactory
     private lateinit var lambdaFunctionInvoker: LambdaFunctionInvoker
     private lateinit var runningBuild: SRunningBuild
+    private lateinit var agentFinder: AgentFinder
+    private lateinit var buildAgent: SBuildAgent
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -35,12 +40,14 @@ class InvokeLambdaFunctionControllerTest
         myLambdaFunctionInvokerFactory = m.mock(LambdaFunctionInvokerFactory::class.java)
         lambdaFunctionInvoker = m.mock(LambdaFunctionInvoker::class.java)
         runningBuild = m.mock(SRunningBuild::class.java)
+        agentFinder = m.mock(AgentFinder::class.java)
+        buildAgent = m.mock(SBuildAgent::class.java)
     }
 
     private fun mockGettingDetails(){
         m.checking(object : Expectations(){
             init {
-                oneOf(request).getParameter(InvokeLambdaFunctionController.RUN_DETAILS)
+                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(objectMapper.writeValueAsString(RUN_DETAILS)))
             }
         })
@@ -73,8 +80,40 @@ class InvokeLambdaFunctionControllerTest
 
     override fun getDefaultProperties(): Map<String, String> = emptyMap()
 
-    override fun createController(): InvokeLambdaFunctionController = InvokeLambdaFunctionController(
-            descriptor, controllerManager, projectManager, accessManager, runningBuildsManager, myLambdaFunctionInvokerFactory)
+    @Test
+    override fun testCheckPermissions() {
+        m.checking(object : Expectations(){
+            init {
+                oneOf(agentFinder).findAgent(request)
+                will(returnValue(buildAgent))
+            }
+        })
+
+        createController().checkPermissions(securityContext, request)
+    }
+
+    @Test(expectedExceptions = [AccessDeniedException::class])
+    override fun testCheckPermissions_Failed() {
+        m.checking(object : Expectations(){
+            init {
+                oneOf(agentFinder).findAgent(request)
+                will(returnValue(null))
+                oneOf(securityContext).authorityHolder
+                will(returnValue(null))
+            }
+        })
+        createController().checkPermissions(securityContext, request)
+    }
+
+    override fun createController() = InvokeLambdaFunctionController(
+            descriptor,
+            controllerManager,
+            projectManager,
+            accessManager,
+            authorizationInterceptor,
+            runningBuildsManager,
+            myLambdaFunctionInvokerFactory,
+            agentFinder)
 
     @Test
     fun testHandle_NoRunDetails() {
@@ -86,7 +125,7 @@ class InvokeLambdaFunctionControllerTest
 
         m.checking(object : Expectations(){
             init {
-                oneOf(request).getParameter(InvokeLambdaFunctionController.RUN_DETAILS)
+                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(null))
             }
         })
@@ -124,7 +163,7 @@ class InvokeLambdaFunctionControllerTest
 
         m.checking(object : Expectations(){
             init {
-                oneOf(request).getParameter(InvokeLambdaFunctionController.RUN_DETAILS)
+                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(BUILD_ID))
             }
         })

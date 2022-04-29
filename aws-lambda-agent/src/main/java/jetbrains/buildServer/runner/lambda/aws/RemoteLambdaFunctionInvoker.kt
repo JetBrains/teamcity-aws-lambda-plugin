@@ -32,6 +32,7 @@ class RemoteLambdaFunctionInvoker(
     private val buildTypeId = context.buildParameters.allParameters.getValue(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY)
     private val agentUsername = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY)
     private val agentPassword = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY)
+    private val agentName = context.build.agentConfiguration.name
     private val buildId = agentUsername.substring(TEAMCITY_BUILD_ID.length)
 
     private val client = HttpClient(engine) {
@@ -68,8 +69,9 @@ class RemoteLambdaFunctionInvoker(
             try {
                 val response: HttpResponse = client.post("$teamcityServerUrl${LambdaConstants.LAMBDA_PLUGIN_PATH}/${LambdaConstants.INVOKE_LAMBDA_PATH}") {
                     setBody(FormDataContent(Parameters.build {
-                        append("id", buildTypeId)
-                        append("runDetails", objectMapper.writeValueAsString(runDetails))
+                        append(LambdaConstants.BUILD_TYPE_ID, buildTypeId)
+                        append(LambdaConstants.RUN_DETAILS, objectMapper.writeValueAsString(runDetails))
+                        append(LambdaConstants.AGENT_NAME, agentName)
                         append(LambdaConstants.BUILD_ID, buildId)
                         context.runnerParameters.map { (key, value) -> append("$PROPS_PREFIX$key", value) }
                     }))

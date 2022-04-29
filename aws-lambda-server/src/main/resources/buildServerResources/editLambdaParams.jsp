@@ -137,7 +137,7 @@
             const queryString = window.location.search;
             const urlParams = new URLSearchParams(queryString);
 
-            return `id=` + urlParams.get('id') + '&' + buildRunnerParams
+            return `${build_type_id_param}=` + urlParams.get('id') + '&' + buildRunnerParams
         }
 
         function clearForms() {

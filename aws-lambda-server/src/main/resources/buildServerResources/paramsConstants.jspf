@@ -44,6 +44,8 @@
 <c:set var="iam_role_default_option" value="<%=LambdaConstants.IAM_ROLE_SELECT_OPTION%>"/>
 <c:set var="iam_role_create_button" value="lambda.iam.role.create"/>
 <c:set var="project_id_param" value="<%=LambdaConstants.PROJECT_ID_PARAM%>"/>
+<c:set var="build_type_id_param" value="<%=LambdaConstants.BUILD_TYPE_ID%>"/>
+
 
 
 <c:set var="plugin_path" value="<%=LambdaConstants.LAMBDA_PLUGIN_PATH%>"/>
