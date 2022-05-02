@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class LocalLambdaFunctionInvokerFactory(
         private val awsConnectionsManager: AwsConnectionsManager
 ) : LambdaFunctionInvokerFactory {
+    private val logger = com.intellij.openapi.diagnostic.Logger.getInstance(LocalLambdaFunctionInvoker::class.java)
     val objectMapper by lazy {
         jacksonObjectMapper()
     }
@@ -20,7 +21,7 @@ class LocalLambdaFunctionInvokerFactory(
         val awsLambda = clientFetcher.getAWSLambdaClient()
         val logger = object : Logger {
             override fun message(message: String?) {
-                println(message)
+                logger.debug(message)
             }
         }
 
