@@ -22,16 +22,18 @@ TBD
 The following IAM actions are required from the role assigned to the lambda function:
 - lambda:UpdateFunctionConfiguration
 - lambda:UpdateFunctionCode
-- lambda:Invoke
+- lambda:InvokeFunction
 - lambda:GetFunction
 - lambda:CreateFunction
 - s3:CreateBucket
+- s3:ListBucket
 - s3:GetObject
 - s3:PutObject
 - iam:AttachRolePolicy
 - iam:CreateRole
 - iam:GetRole
 - iam:ListRoles
+- iam:PassRole
 
 ## Template Images
 The project currently holds several template container images in the `images` folder. These can be used within a build step. Due to the limitations of AWS Lambda, this container must be available through a private ECR. In order to speed up this process,  the `upload_images.sh` script is provided that can be used in the following way:
