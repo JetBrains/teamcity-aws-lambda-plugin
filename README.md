@@ -16,7 +16,7 @@ Teamcity plugin which allows running build agents on AWS Lambda.
 The plugin is compatible with TeamCity 2021.2 and later.
 
 ## Installation
-TBD
+Download the required version from [JetBrains Marletplace](https://plugins.jetbrains.com/plugin/19023-aws-lambda/versions).
 
 ## Required IAM Role
 The following IAM actions are required from the role assigned to the lambda function:
