@@ -31,6 +31,9 @@ upload_images(){
       create_repo $repository_name
   fi
 
+  set -e
+  ./gradlew :aws-lambda-function:build
+
   docker build -t $docker_tag -f "images/build/Dockerfile-$image_name" .
 
   docker push $docker_tag
