@@ -2,6 +2,7 @@ package jetbrains.buildServer.runner.lambda.function
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
+import jetbrains.buildServer.log.Loggers
 import jetbrains.buildServer.runner.lambda.aws.ServerAWSConnectionAwsClientFetcher
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
@@ -11,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class LocalLambdaFunctionInvokerFactory(
         private val awsConnectionsManager: AwsConnectionsManager
 ) : LambdaFunctionInvokerFactory {
-    private val logger = com.intellij.openapi.diagnostic.Logger.getInstance(LocalLambdaFunctionInvoker::class.java)
+    private val logger = Loggers.CLOUD
     val objectMapper by lazy {
         jacksonObjectMapper()
     }
