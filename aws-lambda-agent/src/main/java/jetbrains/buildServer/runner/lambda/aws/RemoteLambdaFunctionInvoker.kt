@@ -23,7 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class RemoteLambdaFunctionInvoker(
+open class RemoteLambdaFunctionInvoker(
         private val logger: Logger,
         private val context: BuildRunnerContext,
         private val objectMapper: ObjectMapper,
@@ -64,7 +64,7 @@ class RemoteLambdaFunctionInvoker(
         }
     }
 
-    override fun invokeLambdaFunction(runDetails: RunDetails): Boolean {
+    override fun invokeLambdaFunction(runDetails: List<RunDetails>): Boolean {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val response: HttpResponse = client.post("$teamcityServerUrl${LambdaConstants.LAMBDA_PLUGIN_PATH}/${LambdaConstants.INVOKE_LAMBDA_PATH}") {

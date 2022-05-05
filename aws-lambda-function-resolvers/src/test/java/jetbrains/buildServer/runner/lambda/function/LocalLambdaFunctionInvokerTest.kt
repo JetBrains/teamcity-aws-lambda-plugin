@@ -70,7 +70,7 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
             }
         })
 
-        val error = invoker.invokeLambdaFunction(RUN_DETAILS)
+        val error = invoker.invokeLambdaFunction(listOf(RUN_DETAILS))
         Assert.assertFalse(error)
     }
 
@@ -89,7 +89,7 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
             }
         })
 
-        val error = invoker.invokeLambdaFunction(RUN_DETAILS)
+        val error = invoker.invokeLambdaFunction(listOf( RUN_DETAILS))
         Assert.assertTrue(error)
     }
 
@@ -103,13 +103,15 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
         private const val BUILD_ID = "buildId"
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
         private const val DIRECTORY_ID = "directoryId"
+        private const val RUN_NUMBER = 0
         private val RUN_DETAILS = RunDetails(
                 USERNAME,
                 PASSWORD,
                 BUILD_ID,
                 URL,
                 CUSTOM_SCRIPT_FILENAME,
-                DIRECTORY_ID
+                DIRECTORY_ID,
+                RUN_NUMBER
         )
     }
 }

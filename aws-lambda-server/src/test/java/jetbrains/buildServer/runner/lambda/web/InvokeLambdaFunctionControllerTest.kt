@@ -48,7 +48,7 @@ class InvokeLambdaFunctionControllerTest
         m.checking(object : Expectations(){
             init {
                 oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
-                will(returnValue(objectMapper.writeValueAsString(RUN_DETAILS)))
+                will(returnValue(objectMapper.writeValueAsString(listOf(RUN_DETAILS))))
             }
         })
     }
@@ -67,7 +67,7 @@ class InvokeLambdaFunctionControllerTest
             init {
                 oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
                 will(returnValue(lambdaFunctionInvoker))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(RUN_DETAILS)
+                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RUN_DETAILS))
             }
         })
     }
@@ -188,7 +188,7 @@ class InvokeLambdaFunctionControllerTest
             init {
                 oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
                 will(returnValue(lambdaFunctionInvoker))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(RUN_DETAILS)
+                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RUN_DETAILS))
                 will(throwException(Exception("mock error")))
             }
         })
@@ -240,7 +240,8 @@ class InvokeLambdaFunctionControllerTest
                 BUILD_ID,
                 "serverUrl",
                 "filename",
-                "directoryId"
+                "directoryId",
+                0
         )
     }
 }

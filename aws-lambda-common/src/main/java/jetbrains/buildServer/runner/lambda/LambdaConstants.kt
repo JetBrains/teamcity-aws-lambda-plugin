@@ -45,6 +45,7 @@ object LambdaConstants {
     const val SCRIPT_CONTENT_HEADER = "#!/bin/bash\n"
     const val SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX =
         "directory=\$(echo \$(dirname \$0) | cut -d ' ' -f1);cd \${directory[0]};\n"
+    const val SCRIPT_CONTENT_SPLITTER = "\n### SPLIT ###\n"
 
     const val ECR_IMAGE_URI_PARAM = "lambda.ecr.image.uri"
     const val ECR_IMAGE_URI_LABEL = "ECR Docker Image Uri"

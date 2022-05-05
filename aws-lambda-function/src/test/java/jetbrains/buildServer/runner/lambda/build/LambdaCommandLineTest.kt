@@ -43,7 +43,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         logger = m.mock(LambdaLogger::class.java)
         detachedBuildApi = m.mock(DetachedBuildApi::class.java)
         workingDirectory = m.mock(File::class.java)
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID)
+        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, RUN_NUMBER)
     }
 
     @AfterMethod
@@ -172,6 +172,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
         private const val ABSOLUTE_PATH = "absolutePath"
+        private const val RUN_NUMBER = 0
     }
 
 }

@@ -114,19 +114,20 @@ class LambdaBuildProcessTest : BaseTestCase() {
                         returnValue(workingDirectory)
                 )
                 oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
-                will(returnValue(CUSTOM_SCRIPT_FILENAME))
+                will(returnValue(listOf(CUSTOM_SCRIPT_FILENAME)))
                 oneOf(archiveManager).archiveDirectory(workingDirectory)
                 will(returnValue(workingDirectoryArchive))
                 oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
                 will(returnValue(DIRECTORY_ID))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(RunDetails(
+                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RunDetails(
                         USERNAME,
                         PASSWORD,
                         BUILD_ID,
                         URL,
                         CUSTOM_SCRIPT_FILENAME,
-                        DIRECTORY_ID
-                ))
+                        DIRECTORY_ID,
+                        RUN_NUMER
+                )))
                 will(returnValue(false))
             }
         })
@@ -168,6 +169,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val BUILD_ID = "buildId"
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
         private const val DIRECTORY_ID = "directoryId"
+        private const val RUN_NUMER = 0
         private const val PROJECT_NAME = "projectName"
         private const val FUNCTION_NAME = "functionName"
         private const val BUILD_ID_LONG = 1234L

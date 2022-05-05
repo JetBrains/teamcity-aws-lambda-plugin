@@ -46,7 +46,7 @@ class InvokeLambdaFunctionController(
                 ?: throw JsonControllerException("Parameter missing: ${LambdaConstants.BUILD_ID}", HttpStatus.BAD_REQUEST)
 
         return try {
-            val runDetails = objectMapper.readValue<RunDetails>(serializedDetails)
+            val runDetails = objectMapper.readValue<List<RunDetails>>(serializedDetails)
             lambdaFunctionInvokerFactory
                     .getLambdaFunctionInvoker(properties, project)
                     .invokeLambdaFunction(runDetails)

@@ -6,7 +6,7 @@ import jetbrains.buildServer.agent.*
 import jetbrains.buildServer.runner.lambda.LambdaConstants.RUNNER_TYPE
 import jetbrains.buildServer.runner.lambda.aws.AgentAWSConnectionAwsClientFetcher
 import jetbrains.buildServer.runner.lambda.aws.RemoteLambdaFunctionInvoker
-import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparer
+import jetbrains.buildServer.runner.lambda.cmd.UnixCommandLinePreparerImpl
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.directory.S3WorkingDirectoryTransferImpl
 import jetbrains.buildServer.runner.lambda.directory.TarArchiveManager
@@ -28,7 +28,7 @@ class LambdaRunner : AgentBuildRunner {
                 context,
                 logger,
                 workingDirectoryTransfer,
-                UnixCommandLinePreparer(context, logger),
+                UnixCommandLinePreparerImpl(context, logger),
                 TarArchiveManager(genericLogger),
                 RemoteLambdaFunctionInvoker(genericLogger, context, jacksonObjectMapper(), CIO.create()),
                 myIsInterrupted

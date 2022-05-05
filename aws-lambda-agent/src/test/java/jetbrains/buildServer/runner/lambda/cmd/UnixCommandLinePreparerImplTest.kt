@@ -17,7 +17,7 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.io.path.createTempDirectory
 
-class UnixCommandLinePreparerTest : BaseTestCase() {
+class UnixCommandLinePreparerImplTest : BaseTestCase() {
     private lateinit var m: Mockery
     private lateinit var context: BuildRunnerContext
     private lateinit var logger: BuildProgressLogger
@@ -58,11 +58,11 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
         val unixCommandLinePreparer = createClient()
         val tempDir = createTempDirectory().toFile()
 
-        val filename = unixCommandLinePreparer.writeBuildScriptContent(PROJECT_NAME, tempDir)
+        val filenameList = unixCommandLinePreparer.writeBuildScriptContent(PROJECT_NAME, tempDir)
 
-        Assert.assertEquals(filename, LambdaConstants.SCRIPT_CONTENT_FILENAME)
+        Assert.assertEquals(filenameList, listOf(LambdaConstants.SCRIPT_CONTENT_FILENAME))
 
-        val scriptFile = File("${tempDir.absolutePath}/$filename")
+        val scriptFile = File("${tempDir.absolutePath}/${filenameList.first()}")
         Assert.assertTrue(scriptFile.exists())
 
         val content = String(Files.readAllBytes(scriptFile.toPath()))
@@ -80,11 +80,11 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
 
         writeToFile(tempDir, outputName)
 
-        val filename = unixCommandLinePreparer.writeBuildScriptContent(PROJECT_NAME, tempDir)
+        val filenameList = unixCommandLinePreparer.writeBuildScriptContent(PROJECT_NAME, tempDir)
 
-        Assert.assertEquals(filename, filename)
+        Assert.assertEquals(filenameList, listOf(outputName))
 
-        val scriptFile = File("${tempDir.absolutePath}/$filename")
+        val scriptFile = File("${tempDir.absolutePath}/${filenameList.first()}")
         Assert.assertTrue(scriptFile.exists())
 
         val content = String(Files.readAllBytes(scriptFile.toPath()))
@@ -103,7 +103,7 @@ class UnixCommandLinePreparerTest : BaseTestCase() {
         writer.close()
     }
 
-    private fun createClient() = UnixCommandLinePreparer(context, logger)
+    private fun createClient() = UnixCommandLinePreparerImpl(context, logger)
 
     companion object {
         private const val PROJECT_NAME = "projectName"

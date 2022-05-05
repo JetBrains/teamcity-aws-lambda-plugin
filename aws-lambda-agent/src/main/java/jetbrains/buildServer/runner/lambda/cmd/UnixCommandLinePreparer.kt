@@ -1,14 +1,11 @@
 package jetbrains.buildServer.runner.lambda.cmd
 
 import jetbrains.buildServer.agent.BuildProgressLogger
-import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import java.io.File
 
-class UnixCommandLinePreparer(private val context: BuildRunnerContext, private val logger: BuildProgressLogger) :
-    CommandLinePreparer {
-    override fun writeBuildScriptContent(projectName: String, workingDirectory: File): String {
-        val filename = LambdaConstants.SCRIPT_CONTENT_FILENAME
+abstract class UnixCommandLinePreparer(private val logger: BuildProgressLogger): CommandLinePreparer {
+    protected fun writeScript(workingDirectory: File, filename: String, scriptContent: String?) {
         val scriptContentFile = File("${workingDirectory.absolutePath}/$filename")
 
         if (!scriptContentFile.exists()) {
@@ -17,15 +14,11 @@ class UnixCommandLinePreparer(private val context: BuildRunnerContext, private v
         }
 
         val writer = scriptContentFile.printWriter()
-        val scriptContent = LambdaConstants.SCRIPT_CONTENT_HEADER +
-                LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + context.runnerParameters.getValue(
-            LambdaConstants.SCRIPT_CONTENT_PARAM
-        )
+        val script = LambdaConstants.SCRIPT_CONTENT_HEADER +
+                LambdaConstants.SCRIPT_CONTENT_CHANGE_DIRECTORY_PREFIX + scriptContent
 
         logger.message("Writing script content to $scriptContentFile")
-        writer.write(scriptContent)
+        writer.write(script)
         writer.close()
-
-        return filename
     }
 }

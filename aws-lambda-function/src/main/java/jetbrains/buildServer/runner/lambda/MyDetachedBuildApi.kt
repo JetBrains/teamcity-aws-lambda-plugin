@@ -16,7 +16,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class MyDetachedBuildApi(
-        runDetails: RunDetails,
+        private val runDetails: RunDetails,
         context: Context,
         engine: HttpClientEngine,
         private val dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -96,13 +96,15 @@ class MyDetachedBuildApi(
 
     override suspend fun startLogging() {
         val serviceMessage = getServiceMessage(
-            "blockOpened", mapOf(Pair("name", FLOW_ID_VALUE), Pair("description", "AWS Lambda Execution"))
+            "blockOpened", mapOf(Pair("name", getFlowIdValue()), Pair("description", "AWS Lambda Execution - Run ${runDetails.runNumber}"))
         )
         logMessage(serviceMessage).join()
     }
 
+    private fun getFlowIdValue() = "$FLOW_ID_VALUE - Run ${runDetails.runNumber}"
+
     override suspend fun stopLogging() {
-        val serviceMessage = getServiceMessage("blockClosed", mapOf(Pair("name", FLOW_ID_VALUE)))
+        val serviceMessage = getServiceMessage("blockClosed", mapOf(Pair("name", getFlowIdValue())))
         logMessage(serviceMessage).join()
     }
 
@@ -121,7 +123,7 @@ class MyDetachedBuildApi(
 
     internal fun getServiceMessage(messageType: String, params: Map<String, String>): String {
         val paramsWithFlow = mapOf(
-            Pair(FLOW_ID, FLOW_ID_VALUE)
+            Pair(FLOW_ID, getFlowIdValue())
         ) + params
 
         val stringBuilder = StringBuilder("##teamcity[$messageType")

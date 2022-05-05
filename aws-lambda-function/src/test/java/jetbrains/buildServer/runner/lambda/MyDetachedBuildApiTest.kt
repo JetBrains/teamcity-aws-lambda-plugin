@@ -33,7 +33,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         m = Mockery()
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID)
+        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, RUN_NUMBER)
         context = m.mock(Context::class.java)
         logger = m.mock(LambdaLogger::class.java)
 
@@ -65,7 +65,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "#teamcity[$MESSAGE flowId='AWS Lambda' text='$SERVICE_MESSAGE')"
+                    "#teamcity[$MESSAGE flowId=${getFlowId()} text='$SERVICE_MESSAGE')"
                 )
                 respond(
                     content = "",
@@ -102,7 +102,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[buildProblem flowId='AWS Lambda' description='$DESCRIPTION']"
+                    "##teamcity[buildProblem flowId=${getFlowId()} description='$DESCRIPTION']"
                 )
                 respond(
                     content = "",
@@ -123,7 +123,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[buildProblem flowId='AWS Lambda' description='$DESCRIPTION' identity='$ERROR_ID']"
+                    "##teamcity[buildProblem flowId=${getFlowId()} description='$DESCRIPTION' identity='$ERROR_ID']"
                 )
                 respond(
                     content = "",
@@ -144,7 +144,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[message flowId='AWS Lambda' text='$MESSAGE' status='WARNING']"
+                    "##teamcity[message flowId=${getFlowId()} text='$MESSAGE' status='WARNING']"
                 )
                 respond(
                     content = "",
@@ -165,7 +165,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[blockOpened flowId='AWS Lambda' name='AWS Lambda' description='AWS Lambda Execution']"
+                    "##teamcity[blockOpened flowId=${getFlowId()} name=${getFlowId()} description='AWS Lambda Execution - Run $RUN_NUMBER']"
                 )
                 respond(
                     content = "",
@@ -186,7 +186,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[blockClosed flowId='AWS Lambda' name='AWS Lambda']"
+                    "##teamcity[blockClosed flowId=${getFlowId()} name=${getFlowId()}]"
                 )
                 respond(
                     content = "",
@@ -205,9 +205,11 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         val serviceMessage = detachedBuildApi.getServiceMessage(MESSAGE, params)
 
         val expectedServiceMessage =
-            "##teamcity[$MESSAGE flowId='AWS Lambda' $DESCRIPTION='$EXPECTED_ESCAPED_VALUES_MESSAGE']"
+            "##teamcity[$MESSAGE flowId=${getFlowId()} $DESCRIPTION='$EXPECTED_ESCAPED_VALUES_MESSAGE']"
         Assert.assertEquals(serviceMessage, expectedServiceMessage)
     }
+
+    private fun getFlowId() = "'AWS Lambda - Run $RUN_NUMBER'"
 
     private fun createClient() = MyDetachedBuildApi(runDetails, context, engine)
 
@@ -218,6 +220,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         private const val PASSWORD = "password"
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
+        private const val RUN_NUMBER = 0
 
 
         private const val SERVICE_MESSAGE = "serviceMessage"

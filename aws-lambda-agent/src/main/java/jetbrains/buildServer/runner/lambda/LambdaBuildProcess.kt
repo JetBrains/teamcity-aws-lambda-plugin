@@ -41,13 +41,16 @@ class LambdaBuildProcess(
     private fun getKey(): String =
             "${context.build.buildTypeId}-${context.build.buildId}"
 
-    private fun getRunDetails(directoryId: String, scriptContentFilename: String): RunDetails = RunDetails(
+    private fun getRunDetails(directoryId: String, scriptContentFilename: List<String>): List<RunDetails> = scriptContentFilename.mapIndexed { index, scriptContent -> getRunDetails(directoryId, scriptContent, index) }
+
+    private fun getRunDetails(directoryId: String, scriptContentFilename: String, index: Int): RunDetails = RunDetails(
             username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
             password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
             buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
             teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
             customScriptFilename = scriptContentFilename,
-            directoryId = directoryId
+            directoryId = directoryId,
+            runNumber = index
     )
 
     override fun start() {}

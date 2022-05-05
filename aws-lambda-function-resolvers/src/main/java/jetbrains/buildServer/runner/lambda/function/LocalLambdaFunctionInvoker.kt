@@ -14,22 +14,27 @@ class LocalLambdaFunctionInvoker(
         private val isInterrupted: AtomicBoolean,
         private val awsLambda: AWSLambda,
         private val lambdaFunctionResolverFactory: LambdaFunctionResolverFactory) : LambdaFunctionInvoker {
-    override fun invokeLambdaFunction(runDetails: RunDetails): Boolean {
+    override fun invokeLambdaFunction(runDetails: List<RunDetails>): Boolean {
         val functionName = lambdaFunctionResolverFactory.getLambdaFunctionResolver().resolveFunction()
 
-        logger.message("Creating request for lambda function")
+        logger.message("Creating request for lambda functions")
 
-        val invokeRequest = InvokeRequest()
-                .withFunctionName(functionName)
-                .withInvocationType(InvocationType.Event)
-                .withPayload(objectMapper.writeValueAsString(runDetails))
+
+        val invokeRequests = runDetails.map {
+            InvokeRequest()
+                    .withFunctionName(functionName)
+                    .withInvocationType(InvocationType.Event)
+                    .withPayload(objectMapper.writeValueAsString(it))
+        }
 
         if (isInterrupted.get()) {
             return true
         }
 
-        logger.message("Adding request to event queue")
-        awsLambda.invoke(invokeRequest)
+        logger.message("Adding requests to event queue")
+        invokeRequests.forEach {
+            awsLambda.invoke(it)
+        }
         return false
     }
 }
