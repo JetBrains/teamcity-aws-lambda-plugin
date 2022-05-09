@@ -2,7 +2,6 @@ package jetbrains.buildServer.runner.lambda.web
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.*
-import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.controllers.AuthorizationInterceptor
 import jetbrains.buildServer.runner.lambda.IamClient

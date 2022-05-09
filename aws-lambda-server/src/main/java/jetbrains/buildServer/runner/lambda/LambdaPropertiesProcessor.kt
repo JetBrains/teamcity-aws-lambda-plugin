@@ -3,10 +3,8 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
-import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
 import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
-import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
@@ -69,19 +67,28 @@ class LambdaPropertiesProcessor(
         }
 
         val connectionId = properties[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM]
-        if (StringUtil.isEmpty(connectionId)) {
+        val credentialsProperties = if (StringUtil.isEmpty(connectionId)) {
             invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "No connection has been chosen"
+            null
         } else if (project != null) {
             try {
-                val credentialsProperties = awsConnectionsManager.getLinkedAwsConnection(properties, project)!!;
-                val region = credentialsProperties.region
-                val credentialsProvider = credentialsProperties.credentialsProvider
-                properties[LambdaConstants.AWS_ACCESS_KEY_ID] = credentialsProvider.credentials.awsAccessKeyId
-                properties[LambdaConstants.AWS_SECRET_ACCESS_KEY] = credentialsProvider.credentials.awsSecretKey
-                properties[LambdaConstants.AWS_REGION] = region
+                awsConnectionsManager.getLinkedAwsConnection(properties, project)!!;
             } catch (e: LinkedAwsConnNotFoundException) {
                 invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "No connection $connectionId found"
+                null
             }
+        } else {
+            null
+        }
+
+        if (credentialsProperties?.isUsingSessionCredentials == false){
+            val region = credentialsProperties.region
+            val credentialsData = credentialsProperties.awsCredentialsHolder.awsCredentials
+            properties[LambdaConstants.AWS_ACCESS_KEY_ID] = credentialsData.accessKeyId
+            properties[LambdaConstants.AWS_SECRET_ACCESS_KEY] = credentialsData.secretAccessKey
+            properties[LambdaConstants.AWS_REGION] = region
+        } else if (credentialsProperties?.isUsingSessionCredentials == true) {
+            invalids[AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM] = "Connection must not use session credentials"
         }
 
         return CollectionsUtil.convertCollection(invalids.entries) { source ->

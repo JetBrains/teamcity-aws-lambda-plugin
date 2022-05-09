@@ -1,27 +1,20 @@
 package jetbrains.buildServer.runner.lambda
 
-import com.amazonaws.auth.AWSCredentials
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.GetUserResult
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import com.amazonaws.services.identitymanagement.model.User
 import jetbrains.buildServer.BaseTestCase
-import jetbrains.buildServer.clouds.amazon.connector.AwsConnectorFactory
+import jetbrains.buildServer.clouds.amazon.connector.AwsCredentialsData
+import jetbrains.buildServer.clouds.amazon.connector.AwsCredentialsHolder
 import jetbrains.buildServer.clouds.amazon.connector.errors.features.LinkedAwsConnNotFoundException
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.clouds.amazon.connector.impl.dataBeans.AwsConnectionBean
-import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsAccessKeysParams
 import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudConnectorConstants
-import jetbrains.buildServer.runner.lambda.LambdaConstants
-import jetbrains.buildServer.runner.lambda.LambdaPropertiesProcessor
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.SProject
-import jetbrains.buildServer.serverSide.oauth.OAuthConnectionDescriptor
-import jetbrains.buildServer.serverSide.oauth.OAuthConnectionsManager
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -39,8 +32,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     private lateinit var project: SProject
     private lateinit var awsConnectionsManager: AwsConnectionsManager
     private lateinit var awsConnectionBean: AwsConnectionBean
-    private lateinit var awsCredentialsProvider: AWSCredentialsProvider
-    private lateinit var awsCredentials: AWSCredentials
+    private lateinit var awsCredentialsHolder: AwsCredentialsHolder
+    private lateinit var awsCredentialsData: AwsCredentialsData
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -56,8 +49,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         project = m.mock(SProject::class.java)
         awsConnectionsManager = m.mock(AwsConnectionsManager::class.java)
         awsConnectionBean = m.mock(AwsConnectionBean::class.java)
-        awsCredentialsProvider = m.mock(AWSCredentialsProvider::class.java)
-        awsCredentials = BasicAWSCredentials(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
+        awsCredentialsHolder = m.mock(AwsCredentialsHolder::class.java)
+        awsCredentialsData = m.mock(AwsCredentialsData::class.java)
     }
 
     private fun verifyIamRole() {
@@ -78,18 +71,29 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     }
 
     private fun ensureCredentialsProvided(properties: Map<String, String>) {
+        val awsCredentialsData = object : AwsCredentialsData {
+            override fun getAccessKeyId(): String = ACCESS_KEY_ID
+
+            override fun getSecretAccessKey(): String = SECRET_ACCESS_KEY
+
+            override fun getSessionToken(): String? = null
+
+        }
+
         m.checking(object : Expectations() {
             init {
                 oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
                 will(returnValue(project))
                 oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
                 will(returnValue(awsConnectionBean))
-                allowing(awsConnectionBean).credentialsProvider
-                will(returnValue(awsCredentialsProvider))
-                allowing(awsCredentialsProvider).credentials
-                will(returnValue(awsCredentials))
+                allowing(awsConnectionBean).awsCredentialsHolder
+                will(returnValue(awsCredentialsHolder))
+                allowing(awsCredentialsHolder).awsCredentials
+                will(returnValue(awsCredentialsData))
                 oneOf(awsConnectionBean).region
                 will(returnValue(REGION_NAME))
+                oneOf(awsConnectionBean).isUsingSessionCredentials
+                will(returnValue(false))
             }
         })
     }
@@ -380,6 +384,27 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, "No connection $CONNECTION_ID found")))
+    }
+    @Test
+    @Throws(Exception::class)
+    fun testProcess_ConnectionWithSessionCredentials() {
+        val propertiesProcessor = createPropertiesProcessor()
+        val properties = createDefaultProperties()
+
+        verifyIamRole()
+        m.checking(object : Expectations() {
+            init {
+                oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
+                will(returnValue(project))
+                oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
+                will(returnValue(awsConnectionBean))
+                exactly(2).of(awsConnectionBean).isUsingSessionCredentials
+                will(returnValue(true))
+            }
+        })
+
+        val invalidProperties = propertiesProcessor.process(properties)
+        Assert.assertTrue(invalidProperties.contains(InvalidProperty(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, "Connection must not use session credentials")))
     }
 
     private fun createPropertiesProcessor() = LambdaPropertiesProcessor(projectManager, awsConnectionsManager) { _, _ ->

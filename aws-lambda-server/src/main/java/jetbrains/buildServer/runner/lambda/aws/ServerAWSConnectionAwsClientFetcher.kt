@@ -1,6 +1,9 @@
 package jetbrains.buildServer.runner.lambda.aws
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.web.JsonControllerException
@@ -17,7 +20,10 @@ class ServerAWSConnectionAwsClientFetcher(
 
     override fun getAWSRegion(): String = awsConnectionBean.region
 
-    override fun buildCredentialsProvider(): AWSCredentialsProvider = awsConnectionBean.credentialsProvider
+    override fun buildCredentialsProvider(): AWSCredentialsProvider {
+        val credentialsData = awsConnectionBean.awsCredentialsHolder.awsCredentials
+        return AWSStaticCredentialsProvider(BasicAWSCredentials(credentialsData.accessKeyId, credentialsData.secretAccessKey))
+    }
 
     override fun getLambdaEndpointUrl(): String? = properties[LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM]
 }

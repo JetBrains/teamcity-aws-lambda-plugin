@@ -15,7 +15,7 @@ ext {
     teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
     teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
     teamcityJavaHome = System.properties['java.home']
-    amazonUtilVersion = 'release-99472-108-g0cf34a4-SNAPSHOT'
+    amazonUtilVersion = 'release-99472-133-g49044ab'
     kotlin_version = '1.6.10'
     mavenRepositoryUser = findProperty('maven.repository.user')
     mavenRepositoryPassword = findProperty('maven.repository.password')
