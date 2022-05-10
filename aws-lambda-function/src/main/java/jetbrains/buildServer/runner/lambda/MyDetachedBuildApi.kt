@@ -8,6 +8,7 @@ import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import jetbrains.buildServer.runner.lambda.model.RunDetails
@@ -49,7 +50,8 @@ class MyDetachedBuildApi(
         }
     }
 
-    private val teamcityBuildRestApi = "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildId}"
+    private val teamcityBuildRestApi = "${runDetails.teamcityServerUrl}/app/rest/builds/id:${runDetails.buildDetails.buildId}"
+    private val teamcityFinishLambdaApi = "${runDetails.teamcityServerUrl}${LambdaConstants.LAMBDA_PLUGIN_PATH}/${LambdaConstants.FINISH_LAMBDA_PATH}"
     private val outputStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
     private val errorStreamMessageQueue: Queue<String> = ConcurrentLinkedQueue()
     private var buildHasFinished = false
@@ -96,12 +98,12 @@ class MyDetachedBuildApi(
 
     override suspend fun startLogging() {
         val serviceMessage = getServiceMessage(
-            "blockOpened", mapOf(Pair("name", getFlowIdValue()), Pair("description", "AWS Lambda Execution - Run ${runDetails.runNumber}"))
+            "blockOpened", mapOf(Pair("name", getFlowIdValue()), Pair("description", "AWS Lambda Execution - Run ${runDetails.invocationId}"))
         )
         logMessage(serviceMessage).join()
     }
 
-    private fun getFlowIdValue() = "$FLOW_ID_VALUE - Run ${runDetails.runNumber}"
+    private fun getFlowIdValue() = "$FLOW_ID_VALUE - Run ${runDetails.invocationId}"
 
     override suspend fun stopLogging() {
         val serviceMessage = getServiceMessage("blockClosed", mapOf(Pair("name", getFlowIdValue())))
@@ -165,7 +167,14 @@ class MyDetachedBuildApi(
         buildHasFinished = true
         outputStreamJob.join()
         errorStreamJob.join()
-        client.put("$teamcityBuildRestApi/finish")
+        client.post("$teamcityFinishLambdaApi"){
+            setBody(FormDataContent(Parameters.build {
+                append(LambdaConstants.BUILD_TYPE_ID, runDetails.buildDetails.buildTypeId)
+                append(LambdaConstants.AGENT_NAME, runDetails.buildDetails.agentName)
+                append(LambdaConstants.BUILD_ID, runDetails.buildDetails.buildId)
+                append(LambdaConstants.INVOCATION_ID, runDetails.invocationId.toString())
+            }))
+        }
     }
 
     override fun failBuild(exception: Throwable, errorId: String?): Job {

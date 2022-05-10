@@ -16,6 +16,7 @@ object LambdaConstants {
     const val IAM_ROLES_LIST_PATH = "iam/list.html"
     const val IAM_ROLES_CREATE_PATH = "iam.html"
     const val INVOKE_LAMBDA_PATH = "lambda.html"
+    const val FINISH_LAMBDA_PATH = "lambda/finish.html"
 
     const val TIMEOUT_BUILD_PROBLEM_TYPE = "LAMBDA_TIMEOUT"
     const val LAMBDA_INVOCATION_ERROR = "LAMBDA_INVOCATION_ERROR"
@@ -32,6 +33,9 @@ object LambdaConstants {
     const val BUILD_TYPE_ID = "buildTypeId"
     const val RUN_DETAILS = "runDetails"
     const val AGENT_NAME = "name"
+    const val INVOCATION_ID = "invocationId"
+
+    const val NUM_INVOCATIONS_PARAM = "lambda.numInvocations"
 
 
     const val LAMBDA_SETTINGS_STEP = "lambda_settings_settings"

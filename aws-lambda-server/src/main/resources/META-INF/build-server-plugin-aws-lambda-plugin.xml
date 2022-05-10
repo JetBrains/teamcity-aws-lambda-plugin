@@ -24,6 +24,7 @@
     <bean class="jetbrains.buildServer.runner.lambda.web.LambdaIamRolesListController"/>
     <bean class="jetbrains.buildServer.runner.lambda.web.LambaDefaultIamRoleCreateController"/>
     <bean class="jetbrains.buildServer.runner.lambda.web.InvokeLambdaFunctionController"/>
+    <bean class="jetbrains.buildServer.runner.lambda.web.FinishLambdaController"/>
     <bean class="jetbrains.buildServer.runner.lambda.LambdaBuildProblemTypes"/>
     <bean class="jetbrains.buildServer.runner.lambda.function.LocalLambdaFunctionInvokerFactory"/>
     <bean id="deploymentStatusProvider" class="jetbrains.buildServer.runner.lambda.LambdaDeploymentStatusProvider"/>

@@ -10,10 +10,7 @@ import jetbrains.buildServer.controllers.agent.AgentFinder
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvokerFactory
 import jetbrains.buildServer.runner.lambda.model.RunDetails
-import jetbrains.buildServer.serverSide.ProjectManager
-import jetbrains.buildServer.serverSide.RunningBuildsManager
-import jetbrains.buildServer.serverSide.SProject
-import jetbrains.buildServer.serverSide.SecurityContextEx
+import jetbrains.buildServer.serverSide.*
 import jetbrains.buildServer.serverSide.auth.AccessChecker
 import jetbrains.buildServer.serverSide.auth.AccessDeniedException
 import jetbrains.buildServer.web.openapi.PluginDescriptor
@@ -44,22 +41,32 @@ class InvokeLambdaFunctionController(
         val serializedDetails = request.getParameter(LambdaConstants.RUN_DETAILS) ?: throw JsonControllerException("Parameter missing: ${LambdaConstants.RUN_DETAILS}", HttpStatus.BAD_REQUEST)
         val builId = request.getParameter(LambdaConstants.BUILD_ID)?.toLong()
                 ?: throw JsonControllerException("Parameter missing: ${LambdaConstants.BUILD_ID}", HttpStatus.BAD_REQUEST)
+        val build = runningBuildsManager.findRunningBuildById(builId) ?: throw JsonControllerException("No build found found: $builId", HttpStatus.BAD_REQUEST)
 
         return try {
             val runDetails = objectMapper.readValue<List<RunDetails>>(serializedDetails)
-            lambdaFunctionInvokerFactory
+            val lambdaFunctionInvoker = lambdaFunctionInvokerFactory
                     .getLambdaFunctionInvoker(properties, project)
-                    .invokeLambdaFunction(runDetails)
+
+            storeNumInvocations(build, runDetails.size)
+            lambdaFunctionInvoker.invokeLambdaFunction(runDetails)
         } catch (e: JsonProcessingException) {
-            stopBuild(builId, e)
+            stopBuild(build, e)
             throw JsonControllerException("Error processing ${LambdaConstants.RUN_DETAILS} parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
         } catch (e: JsonMappingException) {
-            stopBuild(builId, e)
+            stopBuild(build, e)
             throw JsonControllerException("Error mapping ${LambdaConstants.RUN_DETAILS} parameter: ${e.localizedMessage}", HttpStatus.BAD_REQUEST)
         } catch (e: Exception) {
-            stopBuild(builId, e)
+            stopBuild(build, e)
             throw JsonControllerException("Unexpecte error found: ${e.localizedMessage}", HttpStatus.INTERNAL_SERVER_ERROR)
         }
+    }
+
+    private fun storeNumInvocations(build: SRunningBuild, numInvocations: Int) {
+        val buildPromotion = build.buildPromotion as BuildPromotionEx
+
+        buildPromotion.setAttribute(LambdaConstants.NUM_INVOCATIONS_PARAM, numInvocations)
+        buildPromotion.persist()
     }
 
     override fun checkPermissions(securityContext: SecurityContextEx, request: HttpServletRequest) {
@@ -67,8 +74,7 @@ class InvokeLambdaFunctionController(
                 ?: throw AccessDeniedException(securityContext.authorityHolder, "Request has not been called from an agent")
     }
 
-    private fun stopBuild(buildId: Long, e: Exception) {
-        val build = runningBuildsManager.findRunningBuildById(buildId) ?: return
+    private fun stopBuild(build: SRunningBuild, e: Exception) {
         CoroutineScope(Dispatchers.IO).launch {
             build.addBuildProblem(BuildProblemData.createBuildProblem(
                     e::class.java.simpleName,

@@ -21,7 +21,7 @@ import javax.servlet.http.HttpServletResponse
 
 data class JsonControllerException(override val message: String = "", val status: HttpStatus) : Exception(message)
 
-abstract class JsonController<T : Any>(
+abstract class JsonController<T : Any?>(
         descriptor: PluginDescriptor,
         controllerManager: WebControllerManager,
         authInterceptor: AuthorizationInterceptor,
@@ -71,8 +71,9 @@ abstract class JsonController<T : Any>(
     private fun error400(response: HttpServletResponse, errorMessage: String) =
             writeError(response, errorMessage, HttpStatus.BAD_REQUEST)
 
-    private fun writeJson(response: HttpServletResponse, data: Any) =
-            writeMessage(response, objectMapper.writeValueAsString(data), MediaType.APPLICATION_JSON_VALUE)
+    private fun writeJson(response: HttpServletResponse, data: Any?) = data?.let {
+        writeMessage(response, objectMapper.writeValueAsString(data), MediaType.APPLICATION_JSON_VALUE)
+    }
 
     abstract fun handle(project: SProject, request: HttpServletRequest, properties: Map<String, String>): T
 

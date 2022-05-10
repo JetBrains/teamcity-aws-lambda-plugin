@@ -7,7 +7,9 @@ import jetbrains.buildServer.controllers.agent.AgentFinder
 import jetbrains.buildServer.runner.lambda.LambdaConstants
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvokerFactory
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
+import jetbrains.buildServer.serverSide.BuildPromotionEx
 import jetbrains.buildServer.serverSide.RunningBuildsManager
 import jetbrains.buildServer.serverSide.SBuildAgent
 import jetbrains.buildServer.serverSide.SRunningBuild
@@ -19,7 +21,7 @@ import org.jmock.States
 import org.springframework.http.HttpStatus
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
-import java.util.Date
+import java.util.*
 
 class InvokeLambdaFunctionControllerTest
     : JsonControllerTest<Boolean, InvokeLambdaFunctionController>(InvokeLambdaFunctionController.ALLOWED_METHODS, LambdaConstants.INVOKE_LAMBDA_PATH) {
@@ -30,6 +32,7 @@ class InvokeLambdaFunctionControllerTest
     private lateinit var runningBuild: SRunningBuild
     private lateinit var agentFinder: AgentFinder
     private lateinit var buildAgent: SBuildAgent
+    private lateinit var buildPromotion: BuildPromotionEx
 
     @BeforeMethod
     @Throws(Exception::class)
@@ -42,10 +45,11 @@ class InvokeLambdaFunctionControllerTest
         runningBuild = m.mock(SRunningBuild::class.java)
         agentFinder = m.mock(AgentFinder::class.java)
         buildAgent = m.mock(SBuildAgent::class.java)
+        buildPromotion = m.mock(BuildPromotionEx::class.java)
     }
 
-    private fun mockGettingDetails(){
-        m.checking(object : Expectations(){
+    private fun mockGettingDetails() {
+        m.checking(object : Expectations() {
             init {
                 oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(objectMapper.writeValueAsString(listOf(RUN_DETAILS))))
@@ -53,8 +57,8 @@ class InvokeLambdaFunctionControllerTest
         })
     }
 
-    private fun mockGettingBuildId(){
-        m.checking(object : Expectations(){
+    private fun mockGettingBuildId() {
+        m.checking(object : Expectations() {
             init {
                 oneOf(request).getParameter(LambdaConstants.BUILD_ID)
                 will(returnValue(BUILD_ID))
@@ -62,8 +66,8 @@ class InvokeLambdaFunctionControllerTest
         })
     }
 
-    private fun mockInvokingLambdaFunction(){
-        m.checking(object : Expectations(){
+    private fun mockInvokingLambdaFunction() {
+        m.checking(object : Expectations() {
             init {
                 oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
                 will(returnValue(lambdaFunctionInvoker))
@@ -72,17 +76,31 @@ class InvokeLambdaFunctionControllerTest
         })
     }
 
+    private fun mockStoringBuildPromotionAttribute() {
+        m.checking(object : Expectations() {
+            init {
+                oneOf(runningBuild).buildPromotion
+                will(returnValue(buildPromotion))
+                oneOf(buildPromotion).setAttribute(LambdaConstants.NUM_INVOCATIONS_PARAM, 1)
+                oneOf(buildPromotion).persist()
+            }
+        })
+    }
+
     override fun testControllerHandle() {
         mockGettingDetails()
         mockGettingBuildId()
+        mockWriteJson()
         mockInvokingLambdaFunction()
+        mockFindRunningBuild()
+        mockStoringBuildPromotionAttribute()
     }
 
     override fun getDefaultProperties(): Map<String, String> = emptyMap()
 
     @Test
     override fun testCheckPermissions() {
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(agentFinder).findAgent(request)
                 will(returnValue(buildAgent))
@@ -94,7 +112,7 @@ class InvokeLambdaFunctionControllerTest
 
     @Test(expectedExceptions = [AccessDeniedException::class])
     override fun testCheckPermissions_Failed() {
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(agentFinder).findAgent(request)
                 will(returnValue(null))
@@ -123,7 +141,7 @@ class InvokeLambdaFunctionControllerTest
         mockFindingProject()
         mockPropertiesBean(getDefaultProperties())
 
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(null))
@@ -142,12 +160,33 @@ class InvokeLambdaFunctionControllerTest
         mockPropertiesBean(getDefaultProperties())
         mockGettingDetails()
 
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(request).getParameter(LambdaConstants.BUILD_ID)
                 will(returnValue(null))
             }
         })
+        mockJsonError(HttpStatus.BAD_REQUEST)
+        createController().handle(request, response)
+    }
+
+    @Test
+    fun testHandle_NoRunningBuild() {
+        mockAllowedMethods()
+        mockGettingBuildType()
+        mockFindingBuildType()
+        mockFindingProject()
+        mockPropertiesBean(getDefaultProperties())
+        mockGettingBuildId()
+        mockGettingDetails()
+
+        m.checking(object : Expectations() {
+            init {
+                oneOf(runningBuildsManager).findRunningBuildById(BUILD_ID.toLong())
+                will(returnValue(null))
+            }
+        })
+
         mockJsonError(HttpStatus.BAD_REQUEST)
         createController().handle(request, response)
     }
@@ -160,8 +199,9 @@ class InvokeLambdaFunctionControllerTest
         mockFindingProject()
         mockPropertiesBean(getDefaultProperties())
         mockGettingBuildId()
+        mockFindRunningBuild()
 
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
                 will(returnValue(BUILD_ID))
@@ -183,8 +223,10 @@ class InvokeLambdaFunctionControllerTest
         mockPropertiesBean(getDefaultProperties())
         mockGettingDetails()
         mockGettingBuildId()
+        mockFindRunningBuild()
+        mockStoringBuildPromotionAttribute()
 
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
                 oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
                 will(returnValue(lambdaFunctionInvoker))
@@ -203,19 +245,23 @@ class InvokeLambdaFunctionControllerTest
         synchroniser.waitUntil(stopping.`is`("finished"))
     }
 
+    private fun mockFindRunningBuild() {
+        m.checking(object : Expectations() {
+            init {
+                allowing(runningBuildsManager).findRunningBuildById(BUILD_ID.toLong())
+                will(returnValue(runningBuild))
+            }
+        })
+    }
+
     private fun mockStopBuild(): States {
         val stopping = m.states("stopping")
-        m.checking(object : Expectations(){
+        m.checking(object : Expectations() {
             init {
-                oneOf(runningBuildsManager).findRunningBuildById(BUILD_ID.toLong())
-                will(returnValue(runningBuild))
                 oneOf(runningBuild).addBuildProblem(BuildProblemData.createBuildProblem(
                         JsonControllerException::class.java.simpleName,
                         LambdaConstants.LAMBDA_INVOCATION_ERROR,
-                        nonNullWithString(aNonNull(String::class.java))
-                ))
-                org.hamcrest.Matchers.stringContainsInOrder()
-
+                        nonNullWithString(aNonNull(String::class.java))))
                 oneOf(runningBuild).isDetachedFromAgent
                 will(returnValue(true))
 
@@ -237,11 +283,15 @@ class InvokeLambdaFunctionControllerTest
         val RUN_DETAILS = RunDetails(
                 "username",
                 "password",
-                BUILD_ID,
                 "serverUrl",
                 "filename",
                 "directoryId",
-                0
+                0,
+                BuildDetails(
+                        BUILD_ID,
+                        "buildTypeId",
+                        "agentName"
+                )
         )
     }
 }

@@ -7,6 +7,7 @@ import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import org.jmock.Expectations
 import org.jmock.Mockery
@@ -31,6 +32,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
     private lateinit var build: AgentRunningBuild
     private lateinit var archiveManager: ArchiveManager
     private lateinit var workingDirectoryArchive: File
+    private lateinit var buildAgentConfiguration: BuildAgentConfiguration
 
 
     @BeforeMethod
@@ -50,6 +52,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         build = m.mock(AgentRunningBuild::class.java)
         archiveManager = m.mock(ArchiveManager::class.java)
         workingDirectoryArchive = m.mock(File::class.java, "WorkingDirectoryArchive")
+        buildAgentConfiguration = m.mock(BuildAgentConfiguration::class.java)
 
 
         m.checking(object : Expectations() {
@@ -62,6 +65,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
                                 mapOf(
                                         Pair(LambdaConstants.USERNAME_SYSTEM_PROPERTY, USERNAME),
                                         Pair(LambdaConstants.PASSWORD_SYSTEM_PROPERTY, PASSWORD),
+                                        Pair(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY, BUILD_TYPE_ID)
                                 )
                         )
                 )
@@ -72,6 +76,10 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 will(returnValue(BUILD_ID_LONG))
                 allowing(build).buildTypeId
                 will(returnValue(BUILD_TYPE_ID))
+                allowing(build).agentConfiguration
+                will(returnValue(buildAgentConfiguration))
+                allowing(buildAgentConfiguration).name
+                will(returnValue(AGENT_NAME))
             }
         })
     }
@@ -122,11 +130,15 @@ class LambdaBuildProcessTest : BaseTestCase() {
                 oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RunDetails(
                         USERNAME,
                         PASSWORD,
-                        BUILD_ID,
                         URL,
                         CUSTOM_SCRIPT_FILENAME,
                         DIRECTORY_ID,
-                        RUN_NUMER
+                        RUN_NUMER,
+                        BuildDetails(
+                            BUILD_ID,
+                            BUILD_TYPE_ID,
+                            AGENT_NAME
+                        )
                 )))
                 will(returnValue(false))
             }
@@ -174,6 +186,7 @@ class LambdaBuildProcessTest : BaseTestCase() {
         private const val FUNCTION_NAME = "functionName"
         private const val BUILD_ID_LONG = 1234L
         private const val BUILD_TYPE_ID = "buildTypeId"
+        private const val AGENT_NAME = "agentName"
         private const val UPLOAD_KEY = "$BUILD_TYPE_ID-$BUILD_ID_LONG"
     }
 }

@@ -4,10 +4,12 @@ import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.LambdaLogger
 import io.ktor.client.engine.*
 import io.ktor.client.engine.mock.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.http.content.*
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.build.ProcessFailedException
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
@@ -33,7 +35,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         m = Mockery()
         m.setImposteriser(ClassImposteriser.INSTANCE)
         m.setThreadingPolicy(Synchroniser())
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, RUN_NUMBER)
+        runDetails = RunDetails(USERNAME, PASSWORD, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, INVOCATION_ID, BuildDetails(BUILD_ID, BUILD_TYPE_ID, AGENT_NAME))
         context = m.mock(Context::class.java)
         logger = m.mock(LambdaLogger::class.java)
 
@@ -81,8 +83,14 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         runBlocking {
             engine = MockEngine { request ->
                 Assert.assertTrue(request.url.toString().startsWith(TEAMCITY_URl))
-                Assert.assertTrue(request.url.toString().endsWith("$BUILD_ID/finish"))
-                Assert.assertEquals(request.method, HttpMethod.Put)
+                Assert.assertTrue(request.url.toString().endsWith(LambdaConstants.FINISH_LAMBDA_PATH))
+                Assert.assertEquals(request.method, HttpMethod.Post)
+                Assert.assertEquals(request.body::class.java, FormDataContent::class.java)
+                val formData = (request.body as FormDataContent).formData
+                Assert.assertEquals(formData[LambdaConstants.BUILD_TYPE_ID], BUILD_TYPE_ID)
+                Assert.assertEquals(formData[LambdaConstants.AGENT_NAME], AGENT_NAME)
+                Assert.assertEquals(formData[LambdaConstants.BUILD_ID], BUILD_ID)
+                Assert.assertEquals(formData[LambdaConstants.INVOCATION_ID], INVOCATION_ID.toString())
                 respond(
                     content = "",
                 )
@@ -165,7 +173,7 @@ class MyDetachedBuildApiTest : BaseTestCase() {
                 Assert.assertEquals(request.body::class.java, TextContent::class.java)
                 Assert.assertEquals(
                     (request.body as TextContent).text,
-                    "##teamcity[blockOpened flowId=${getFlowId()} name=${getFlowId()} description='AWS Lambda Execution - Run $RUN_NUMBER']"
+                    "##teamcity[blockOpened flowId=${getFlowId()} name=${getFlowId()} description='AWS Lambda Execution - Run $INVOCATION_ID']"
                 )
                 respond(
                     content = "",
@@ -209,18 +217,20 @@ class MyDetachedBuildApiTest : BaseTestCase() {
         Assert.assertEquals(serviceMessage, expectedServiceMessage)
     }
 
-    private fun getFlowId() = "'AWS Lambda - Run $RUN_NUMBER'"
+    private fun getFlowId() = "'AWS Lambda - Run $INVOCATION_ID'"
 
     private fun createClient() = MyDetachedBuildApi(runDetails, context, engine)
 
     companion object {
         private const val TEAMCITY_URl = "http://teamcityUrl"
         private const val BUILD_ID = "buildId"
+        private const val BUILD_TYPE_ID = "buildTypeId"
+        private const val AGENT_NAME = "agentName"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
         private const val SCRIPT_CONTENT = "scriptContent"
         private const val DIRECTORY_ID = "directoryId"
-        private const val RUN_NUMBER = 0
+        private const val INVOCATION_ID = 0
 
 
         private const val SERVICE_MESSAGE = "serviceMessage"

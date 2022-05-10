@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger
 import com.intellij.execution.configurations.GeneralCommandLine
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.DetachedBuildApi
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.runBlocking
 import org.jmock.Expectations
@@ -43,7 +44,7 @@ class LambdaCommandLineTest : BaseTestCase() {
         logger = m.mock(LambdaLogger::class.java)
         detachedBuildApi = m.mock(DetachedBuildApi::class.java)
         workingDirectory = m.mock(File::class.java)
-        runDetails = RunDetails(USERNAME, PASSWORD, BUILD_ID, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, RUN_NUMBER)
+        runDetails = RunDetails(USERNAME, PASSWORD, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, RUN_NUMBER, BuildDetails(BUILD_ID, BUILD_TYPE_ID, AGENT_NAME))
     }
 
     @AfterMethod
@@ -159,14 +160,16 @@ class LambdaCommandLineTest : BaseTestCase() {
         Assert.assertEquals(generalCommandLine.workDirectory, workingDirectory)
         Assert.assertEquals(generalCommandLine.envParams, System.getenv())
         Assert.assertEquals(
-            generalCommandLine.parametersList.list,
-            listOf("$ABSOLUTE_PATH/${runDetails.customScriptFilename}")
+                generalCommandLine.parametersList.list,
+                listOf("$ABSOLUTE_PATH/${runDetails.customScriptFilename}")
         )
     }
 
     companion object {
         private const val TEAMCITY_URl = "http://teamcityUrl"
         private const val BUILD_ID = "buildId"
+        private const val BUILD_TYPE_ID = "buildTypeId"
+        private const val AGENT_NAME = "agentName"
         private const val USERNAME = "username"
         private const val PASSWORD = "password"
         private const val SCRIPT_CONTENT = "scriptContent"

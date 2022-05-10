@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse
 
 private const val s = "buildTypeId"
 
-abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val allowedMethods: Set<String>, private val path: String) : BaseTestCase() {
+abstract class JsonControllerTest<K : Any?, T : JsonController<K>>(private val allowedMethods: Set<String>, private val path: String) : BaseTestCase() {
     protected lateinit var m: Mockery
     protected lateinit var descriptor: PluginDescriptor
     protected lateinit var controllerManager: WebControllerManager
@@ -180,7 +180,6 @@ abstract class JsonControllerTest<K : Any, T : JsonController<K>>(private val al
         mockFindingBuildType()
         mockFindingProject()
         mockPropertiesBean(getDefaultProperties())
-        mockWriteJson()
         testControllerHandle()
         createController().handle(request, response)
     }

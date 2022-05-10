@@ -9,6 +9,7 @@ import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import jetbrains.buildServer.runner.lambda.directory.Logger
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import org.jmock.Expectations
 import org.jmock.Mockery
 import org.jmock.lib.concurrent.Synchroniser
@@ -104,14 +105,20 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
         private const val CUSTOM_SCRIPT_FILENAME = "customScriptFilename"
         private const val DIRECTORY_ID = "directoryId"
         private const val RUN_NUMBER = 0
+        private const val BUILD_TYPE_ID = "buildTypeId"
+        private const val AGENT_NAME = "agentName"
         private val RUN_DETAILS = RunDetails(
                 USERNAME,
                 PASSWORD,
-                BUILD_ID,
                 URL,
                 CUSTOM_SCRIPT_FILENAME,
                 DIRECTORY_ID,
-                RUN_NUMBER
+                RUN_NUMBER,
+                BuildDetails(
+                    BUILD_ID,
+                    BUILD_TYPE_ID,
+                    AGENT_NAME
+                )
         )
     }
 }

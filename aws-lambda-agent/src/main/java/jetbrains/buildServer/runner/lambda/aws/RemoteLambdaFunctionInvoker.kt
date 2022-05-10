@@ -29,11 +29,8 @@ open class RemoteLambdaFunctionInvoker(
         private val objectMapper: ObjectMapper,
         engine: HttpClientEngine) : LambdaFunctionInvoker {
     private val teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL)
-    private val buildTypeId = context.buildParameters.allParameters.getValue(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY)
     private val agentUsername = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY)
     private val agentPassword = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY)
-    private val agentName = context.build.agentConfiguration.name
-    private val buildId = agentUsername.substring(TEAMCITY_BUILD_ID.length)
 
     private val client = HttpClient(engine) {
         install(Logging) {
@@ -65,14 +62,19 @@ open class RemoteLambdaFunctionInvoker(
     }
 
     override fun invokeLambdaFunction(runDetails: List<RunDetails>): Boolean {
+        if (runDetails.isEmpty()){
+            return true
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                val buildDetails = runDetails.first().buildDetails
                 val response: HttpResponse = client.post("$teamcityServerUrl${LambdaConstants.LAMBDA_PLUGIN_PATH}/${LambdaConstants.INVOKE_LAMBDA_PATH}") {
                     setBody(FormDataContent(Parameters.build {
-                        append(LambdaConstants.BUILD_TYPE_ID, buildTypeId)
+                        append(LambdaConstants.BUILD_TYPE_ID, buildDetails.buildTypeId)
                         append(LambdaConstants.RUN_DETAILS, objectMapper.writeValueAsString(runDetails))
-                        append(LambdaConstants.AGENT_NAME, agentName)
-                        append(LambdaConstants.BUILD_ID, buildId)
+                        append(LambdaConstants.AGENT_NAME, buildDetails.agentName)
+                        append(LambdaConstants.BUILD_ID, buildDetails.buildId)
                         context.runnerParameters.map { (key, value) -> append("$PROPS_PREFIX$key", value) }
                     }))
                 }

@@ -8,6 +8,7 @@ import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
+import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -46,11 +47,15 @@ class LambdaBuildProcess(
     private fun getRunDetails(directoryId: String, scriptContentFilename: String, index: Int): RunDetails = RunDetails(
             username = context.buildParameters.allParameters.getValue(LambdaConstants.USERNAME_SYSTEM_PROPERTY),
             password = context.buildParameters.allParameters.getValue(LambdaConstants.PASSWORD_SYSTEM_PROPERTY),
-            buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
             teamcityServerUrl = context.configParameters.getValue(LambdaConstants.TEAMCITY_SERVER_URL),
             customScriptFilename = scriptContentFilename,
             directoryId = directoryId,
-            runNumber = index
+            invocationId = index,
+            buildDetails = BuildDetails(
+                    buildId = context.configParameters.getValue(LambdaConstants.TEAMCITY_BUILD_ID),
+                    buildTypeId = context.buildParameters.allParameters.getValue(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY),
+                    agentName = context.build.agentConfiguration.name
+            )
     )
 
     override fun start() {}
