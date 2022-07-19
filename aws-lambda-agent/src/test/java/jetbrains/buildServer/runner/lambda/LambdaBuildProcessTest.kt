@@ -2,132 +2,87 @@ package jetbrains.buildServer.runner.lambda
 
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.*
-import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
 import jetbrains.buildServer.runner.lambda.cmd.CommandLinePreparer
 import jetbrains.buildServer.runner.lambda.directory.ArchiveManager
 import jetbrains.buildServer.runner.lambda.directory.WorkingDirectoryTransfer
 import jetbrains.buildServer.runner.lambda.function.LambdaFunctionInvoker
 import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
-import org.jmock.Expectations
 import org.jmock.Mockery
-import org.jmock.lib.concurrent.Synchroniser
 import org.jmock.lib.legacy.ClassImposteriser
+import org.mockito.Mock
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.testng.Assert
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Listeners(MockitoTestNGListener::class)
 class LambdaBuildProcessTest : BaseTestCase() {
-    private lateinit var m: Mockery
+    @Mock
     private lateinit var context: BuildRunnerContext
+    @Mock
     private lateinit var buildParametersMap: BuildParametersMap
+    @Mock
     private lateinit var workingDirectoryTransfer: WorkingDirectoryTransfer
+    @Mock
     private lateinit var workingDirectory: File
+    @Mock
     private lateinit var commandLinePreparer: CommandLinePreparer
+    @Mock
     private lateinit var lambdaFunctionInvoker: LambdaFunctionInvoker
+    @Mock
     private lateinit var logger: BuildProgressLogger
+    @Mock
     private lateinit var build: AgentRunningBuild
+    @Mock
     private lateinit var archiveManager: ArchiveManager
+    @Mock
     private lateinit var workingDirectoryArchive: File
+    @Mock
     private lateinit var buildAgentConfiguration: BuildAgentConfiguration
-
-
-    @BeforeMethod
-    @Throws(Exception::class)
-    public override fun setUp() {
-        super.setUp()
-        m = Mockery()
-        m.setImposteriser(ClassImposteriser.INSTANCE)
-        m.setThreadingPolicy(Synchroniser())
-        context = m.mock(BuildRunnerContext::class.java)
-        buildParametersMap = m.mock(BuildParametersMap::class.java)
-        workingDirectoryTransfer = m.mock(WorkingDirectoryTransfer::class.java)
-        workingDirectory = m.mock(File::class.java, "WorkingDirectory")
-        commandLinePreparer = m.mock(CommandLinePreparer::class.java)
-        lambdaFunctionInvoker = m.mock(LambdaFunctionInvoker::class.java)
-        logger = m.mockBuildLogger()
-        build = m.mock(AgentRunningBuild::class.java)
-        archiveManager = m.mock(ArchiveManager::class.java)
-        workingDirectoryArchive = m.mock(File::class.java, "WorkingDirectoryArchive")
-        buildAgentConfiguration = m.mock(BuildAgentConfiguration::class.java)
-
-
-        m.checking(object : Expectations() {
-            init {
-                allowing(context).buildParameters
-                will(returnValue(buildParametersMap))
-                allowing(buildParametersMap).allParameters
-                will(
-                        returnValue(
-                                mapOf(
-                                        Pair(LambdaConstants.USERNAME_SYSTEM_PROPERTY, USERNAME),
-                                        Pair(LambdaConstants.PASSWORD_SYSTEM_PROPERTY, PASSWORD),
-                                        Pair(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY, BUILD_TYPE_ID)
-                                )
-                        )
-                )
-
-                allowing(context).build
-                will(returnValue(build))
-                allowing(build).buildId
-                will(returnValue(BUILD_ID_LONG))
-                allowing(build).buildTypeId
-                will(returnValue(BUILD_TYPE_ID))
-                allowing(build).agentConfiguration
-                will(returnValue(buildAgentConfiguration))
-                allowing(buildAgentConfiguration).name
-                will(returnValue(AGENT_NAME))
-            }
-        })
-    }
-
-    @AfterMethod
-    @Throws(Exception::class)
-    public override fun tearDown() {
-        m.assertIsSatisfied()
-        super.tearDown()
-    }
 
     @Test
     @Throws(Exception::class)
     fun testWaitFor() {
         val buildProcess = createBuildProcess()
+        whenever(context.buildParameters).thenReturn(buildParametersMap)
+        whenever(buildParametersMap.allParameters).thenReturn(
+            mapOf(
+                Pair(LambdaConstants.USERNAME_SYSTEM_PROPERTY, USERNAME),
+                Pair(LambdaConstants.PASSWORD_SYSTEM_PROPERTY, PASSWORD),
+                Pair(LambdaConstants.BUILD_TYPE_SYSTEM_PROPERTY, BUILD_TYPE_ID)
+            )
+        )
+        whenever(context.build).thenReturn(build)
+        whenever(build.buildId).thenReturn(BUILD_ID_LONG)
+        whenever(build.buildTypeId).thenReturn(BUILD_TYPE_ID)
+        whenever(build.agentConfiguration).thenReturn(buildAgentConfiguration)
+        whenever(buildAgentConfiguration.name).thenReturn(AGENT_NAME)
 
-        m.checking(object : Expectations() {
-            init {
-                allowing(context).configParameters
-                will(
-                        returnValue(
-                                mapOf(
-                                        Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
-                                        Pair(LambdaConstants.TEAMCITY_SERVER_URL, URL),
-                                )
-                        )
-                )
-
-                allowing(buildParametersMap).systemProperties
-                will(
-                        returnValue(
-                                mapOf(
-                                        Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
-                                )
-                        )
-                )
-
-                allowing(context).workingDirectory
-                will(
-                        returnValue(workingDirectory)
-                )
-                oneOf(commandLinePreparer).writeBuildScriptContent(PROJECT_NAME, workingDirectory)
-                will(returnValue(listOf(CUSTOM_SCRIPT_FILENAME)))
-                oneOf(archiveManager).archiveDirectory(workingDirectory)
-                will(returnValue(workingDirectoryArchive))
-                oneOf(workingDirectoryTransfer).upload(UPLOAD_KEY, workingDirectoryArchive)
-                will(returnValue(DIRECTORY_ID))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RunDetails(
+        whenever(context.configParameters).thenReturn(
+            mapOf(
+                Pair(LambdaConstants.TEAMCITY_BUILD_ID, BUILD_ID),
+                Pair(LambdaConstants.TEAMCITY_SERVER_URL, URL),
+            )
+        )
+        whenever(buildParametersMap.systemProperties).thenReturn(
+            mapOf(
+                Pair(LambdaConstants.TEAMCITY_PROJECT_NAME, PROJECT_NAME)
+            )
+        )
+        whenever(context.workingDirectory).thenReturn(workingDirectory)
+        whenever(commandLinePreparer.writeBuildScriptContent(PROJECT_NAME, workingDirectory)).thenReturn(listOf(CUSTOM_SCRIPT_FILENAME))
+        whenever(archiveManager.archiveDirectory(workingDirectory)).thenReturn(workingDirectoryArchive)
+        whenever(workingDirectoryTransfer.upload(UPLOAD_KEY, workingDirectoryArchive)).thenReturn(DIRECTORY_ID)
+        whenever(
+            lambdaFunctionInvoker.invokeLambdaFunction(
+                listOf(
+                    RunDetails(
                         USERNAME,
                         PASSWORD,
                         URL,
@@ -139,10 +94,10 @@ class LambdaBuildProcessTest : BaseTestCase() {
                             BUILD_TYPE_ID,
                             AGENT_NAME
                         )
-                )))
-                will(returnValue(false))
-            }
-        })
+                    )
+                )
+            )
+        ).thenReturn(false)
 
         val status = buildProcess.waitFor()
         Assert.assertEquals(status, BuildFinishedStatus.FINISHED_DETACHED)
@@ -165,13 +120,13 @@ class LambdaBuildProcessTest : BaseTestCase() {
     }
 
     private fun createBuildProcess() = LambdaBuildProcess(
-            context,
-            logger,
-            workingDirectoryTransfer,
-            commandLinePreparer,
-            archiveManager,
-            lambdaFunctionInvoker,
-            AtomicBoolean()
+        context,
+        logger,
+        workingDirectoryTransfer,
+        commandLinePreparer,
+        archiveManager,
+        lambdaFunctionInvoker,
+        AtomicBoolean()
     )
 
     companion object {

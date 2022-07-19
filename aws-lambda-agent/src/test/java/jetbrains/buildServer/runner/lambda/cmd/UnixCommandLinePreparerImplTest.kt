@@ -4,53 +4,35 @@ import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.agent.BuildProgressLogger
 import jetbrains.buildServer.agent.BuildRunnerContext
 import jetbrains.buildServer.runner.lambda.LambdaConstants
-import jetbrains.buildServer.runner.lambda.MockLoggerObject.mockBuildLogger
-import org.jmock.Expectations
-import org.jmock.Mockery
-import org.jmock.lib.concurrent.Synchroniser
-import org.jmock.lib.legacy.ClassImposteriser
+import org.mockito.Mock
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.testng.Assert
-import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
 import java.io.File
 import java.nio.file.Files
 import kotlin.io.path.createTempDirectory
 
+@Listeners(MockitoTestNGListener::class)
 class UnixCommandLinePreparerImplTest : BaseTestCase() {
-    private lateinit var m: Mockery
+
+    @Mock
     private lateinit var context: BuildRunnerContext
+
+    @Mock
     private lateinit var logger: BuildProgressLogger
 
     @BeforeMethod
     @Throws(Exception::class)
     public override fun setUp() {
         super.setUp()
-        m = Mockery()
-        m.setImposteriser(ClassImposteriser.INSTANCE)
-        m.setThreadingPolicy(Synchroniser())
-        context = m.mock(BuildRunnerContext::class.java)
-        logger = m.mockBuildLogger()
-
-        m.checking(object : Expectations() {
-            init {
-                oneOf(context).runnerParameters
-                will(
-                    returnValue(
-                        mapOf(
-                            Pair(LambdaConstants.SCRIPT_CONTENT_PARAM, SCRIPT_CONTENT)
-                        )
-                    )
-                )
-            }
-        })
-    }
-
-    @AfterMethod
-    @Throws(Exception::class)
-    public override fun tearDown() {
-        m.assertIsSatisfied()
-        super.tearDown()
+        whenever(context.runnerParameters).thenReturn(
+            mapOf(
+                Pair(LambdaConstants.SCRIPT_CONTENT_PARAM, SCRIPT_CONTENT)
+            )
+        )
     }
 
     @Test

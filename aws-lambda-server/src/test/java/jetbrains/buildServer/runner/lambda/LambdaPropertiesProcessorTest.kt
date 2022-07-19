@@ -3,7 +3,6 @@ package jetbrains.buildServer.runner.lambda
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement
 import com.amazonaws.services.identitymanagement.model.GetRoleRequest
 import com.amazonaws.services.identitymanagement.model.GetUserResult
-import com.amazonaws.services.identitymanagement.model.NoSuchEntityException
 import com.amazonaws.services.identitymanagement.model.User
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.clouds.amazon.connector.AwsCredentialsData
@@ -15,59 +14,54 @@ import jetbrains.buildServer.clouds.amazon.connector.utils.parameters.AwsCloudCo
 import jetbrains.buildServer.serverSide.InvalidProperty
 import jetbrains.buildServer.serverSide.ProjectManager
 import jetbrains.buildServer.serverSide.SProject
-import org.jmock.Expectations
-import org.jmock.Mockery
-import org.jmock.lib.concurrent.Synchroniser
-import org.jmock.lib.legacy.ClassImposteriser
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.testng.Assert
-import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
 
+@Listeners(MockitoTestNGListener::class)
 class LambdaPropertiesProcessorTest : BaseTestCase() {
-    private lateinit var m: Mockery
+    @Mock
     private lateinit var iam: AmazonIdentityManagement
+
+    @Mock
     private lateinit var userResult: GetUserResult
+
+    @Mock
     private lateinit var user: User
+
+    @Mock
     private lateinit var projectManager: ProjectManager
+
+    @Mock
     private lateinit var project: SProject
+
+    @Mock
     private lateinit var awsConnectionsManager: AwsConnectionsManager
+
+    @Mock
     private lateinit var awsConnectionBean: AwsConnectionBean
+
+    @Mock
     private lateinit var awsCredentialsHolder: AwsCredentialsHolder
+
+    @Mock
     private lateinit var awsCredentialsData: AwsCredentialsData
 
-    @BeforeMethod
-    @Throws(Exception::class)
-    override fun setUp() {
-        super.setUp()
-        m = Mockery()
-        m.setImposteriser(ClassImposteriser.INSTANCE)
-        m.setThreadingPolicy(Synchroniser())
-        iam = m.mock(AmazonIdentityManagement::class.java)
-        userResult = m.mock(GetUserResult::class.java)
-        user = m.mock(User::class.java)
-        projectManager = m.mock(ProjectManager::class.java)
-        project = m.mock(SProject::class.java)
-        awsConnectionsManager = m.mock(AwsConnectionsManager::class.java)
-        awsConnectionBean = m.mock(AwsConnectionBean::class.java)
-        awsCredentialsHolder = m.mock(AwsCredentialsHolder::class.java)
-        awsCredentialsData = m.mock(AwsCredentialsData::class.java)
+    private fun verifyIamRole() {
+        Mockito.verify(iam).getRole(GetRoleRequest().apply {
+            roleName = IAM_ROLE_NAME
+        })
+
     }
 
-    private fun verifyIamRole() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(iam).user
-                will(returnValue(userResult))
-                oneOf(userResult).user
-                will(returnValue(user))
-                oneOf(user).arn
-                will(returnValue(USER_ARN))
-
-                oneOf(iam).getRole(GetRoleRequest().apply {
-                    roleName = IAM_ROLE_NAME
-                })
-            }
-        })
+    private fun mockIamRole() {
+        whenever(iam.user).thenReturn(userResult)
+        whenever(userResult.user).thenReturn(user)
+        whenever(user.arn).thenReturn(USER_ARN)
     }
 
     private fun ensureCredentialsProvided(properties: Map<String, String>) {
@@ -80,22 +74,17 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
 
         }
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
-                will(returnValue(project))
-                oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
-                will(returnValue(awsConnectionBean))
-                allowing(awsConnectionBean).awsCredentialsHolder
-                will(returnValue(awsCredentialsHolder))
-                allowing(awsCredentialsHolder).awsCredentials
-                will(returnValue(awsCredentialsData))
-                oneOf(awsConnectionBean).region
-                will(returnValue(REGION_NAME))
-                oneOf(awsConnectionBean).isUsingSessionCredentials
-                will(returnValue(false))
-            }
-        })
+        ensureProjectIsProvided()
+        whenever(awsConnectionsManager.getLinkedAwsConnection(properties, project))
+            .thenReturn(awsConnectionBean)
+        whenever(awsConnectionBean.awsCredentialsHolder)
+            .thenReturn(awsCredentialsHolder)
+        whenever(awsCredentialsHolder.awsCredentials)
+            .thenReturn(awsCredentialsData)
+        whenever(awsConnectionBean.region)
+            .thenReturn(REGION_NAME)
+        whenever(awsConnectionBean.isUsingSessionCredentials)
+            .thenReturn(false)
     }
 
     private fun ensureCredentialsAreInjected(properties: Map<String, String>) {
@@ -110,7 +99,6 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Test
     @Throws(Exception::class)
     fun testProcess() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -118,12 +106,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.isEmpty())
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_ServiceEndpointUrl() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = mutableMapOf(Pair(LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM, URL))
@@ -133,12 +121,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.isEmpty())
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_BadServiceEndpointUrl() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = mutableMapOf(Pair(LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM, BAD_URL))
@@ -148,12 +136,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.LAMBDA_ENDPOINT_URL_PARAM, LambdaConstants.LAMBDA_ENDPOINT_URL_ERROR)))
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_NoScriptContent() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -164,12 +152,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.SCRIPT_CONTENT_PARAM, LambdaConstants.SCRIPT_CONTENT_ERROR)))
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_NoMemorySize() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -180,12 +168,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.MEMORY_SIZE_PARAM, LambdaConstants.MEMORY_SIZE_ERROR)))
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_MemorySizeNotNumber() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -196,12 +184,12 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.MEMORY_SIZE_PARAM, LambdaConstants.MEMORY_SIZE_VALUE_ERROR)))
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_MemorySizeNotValidMemory() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -211,19 +199,19 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-                invalidProperties.contains(
-                        InvalidProperty(
-                                LambdaConstants.MEMORY_SIZE_PARAM,
-                                LambdaConstants.MEMORY_SIZE_VALUE_ERROR
-                        )
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.MEMORY_SIZE_PARAM,
+                    LambdaConstants.MEMORY_SIZE_VALUE_ERROR
                 )
+            )
         )
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_StorageSizeNotNumber() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -233,20 +221,20 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-                invalidProperties.contains(
-                        InvalidProperty(
-                                LambdaConstants.STORAGE_SIZE_PARAM,
-                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
-                        )
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
                 )
+            )
         )
         ensureCredentialsAreInjected(properties)
+        verifyIamRole()
     }
 
     @Test
     @Throws(Exception::class)
     fun testProcess_StorageSizeNotValidMemory() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
 
         val properties = createDefaultProperties()
@@ -256,13 +244,14 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(
-                invalidProperties.contains(
-                        InvalidProperty(
-                                LambdaConstants.STORAGE_SIZE_PARAM,
-                                LambdaConstants.STORAGE_SIZE_VALUE_ERROR
-                        )
+            invalidProperties.contains(
+                InvalidProperty(
+                    LambdaConstants.STORAGE_SIZE_PARAM,
+                    LambdaConstants.STORAGE_SIZE_VALUE_ERROR
                 )
+            )
         )
+        verifyIamRole()
     }
 
     @Test
@@ -296,22 +285,6 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Test
     @Throws(Exception::class)
     fun testProcess_NonExistingIamRole() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(iam).user
-                will(returnValue(userResult))
-                oneOf(userResult).user
-                will(returnValue(user))
-                oneOf(user).arn
-                will(returnValue(USER_ARN))
-
-                oneOf(iam).getRole(GetRoleRequest().apply {
-                    roleName = IAM_ROLE_NAME
-                })
-                will(throwException(NoSuchEntityException("mock")))
-            }
-        })
-
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
 
@@ -326,12 +299,10 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Test
     @Throws(Exception::class)
     fun testProcess_NoProjectId() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
         properties.remove(LambdaConstants.PROJECT_ID_PARAM)
 
-        ensureCredentialsProvided(properties)
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(LambdaConstants.PROJECT_ID_PARAM, "No project property found")))
     }
@@ -339,13 +310,8 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Test
     @Throws(Exception::class)
     fun testProcess_NoProjectFound() {
-        verifyIamRole()
-        m.checking(object : Expectations() {
-            init {
-                oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
-                will(returnValue(null))
-            }
-        })
+        whenever(projectManager.findProjectByExternalId(PROJECT_ID))
+            .thenReturn(null)
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
 
@@ -356,14 +322,14 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     @Test
     @Throws(Exception::class)
     fun testProcess_NoConnectionId() {
-        verifyIamRole()
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
         properties.remove(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM)
 
-        ensureCredentialsProvided(properties)
+        ensureProjectIsProvided()
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, "No connection has been chosen")))
+        verifyIamRole()
     }
 
     @Test
@@ -372,39 +338,35 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
 
-        verifyIamRole()
-        m.checking(object : Expectations() {
-            init {
-                oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
-                will(returnValue(project))
-                oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
-                will(throwException(LinkedAwsConnNotFoundException("Mock exception")))
-            }
-        })
+        ensureProjectIsProvided()
+        whenever(awsConnectionsManager.getLinkedAwsConnection(properties, project))
+            .thenThrow(LinkedAwsConnNotFoundException("mock"))
 
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, "No connection $CONNECTION_ID found")))
+        verifyIamRole()
     }
+
     @Test
     @Throws(Exception::class)
     fun testProcess_ConnectionWithSessionCredentials() {
         val propertiesProcessor = createPropertiesProcessor()
         val properties = createDefaultProperties()
 
-        verifyIamRole()
-        m.checking(object : Expectations() {
-            init {
-                oneOf(projectManager).findProjectByExternalId(PROJECT_ID)
-                will(returnValue(project))
-                oneOf(awsConnectionsManager).getLinkedAwsConnection(properties, project)
-                will(returnValue(awsConnectionBean))
-                exactly(2).of(awsConnectionBean).isUsingSessionCredentials
-                will(returnValue(true))
-            }
-        })
+        ensureProjectIsProvided()
+        whenever(awsConnectionsManager.getLinkedAwsConnection(properties, project))
+            .thenReturn(awsConnectionBean)
+        whenever(awsConnectionBean.isUsingSessionCredentials)
+            .thenReturn(true)
 
         val invalidProperties = propertiesProcessor.process(properties)
         Assert.assertTrue(invalidProperties.contains(InvalidProperty(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, "Connection must not use session credentials")))
+        verifyIamRole()
+    }
+
+    private fun ensureProjectIsProvided() {
+        whenever(projectManager.findProjectByExternalId(PROJECT_ID))
+            .thenReturn(project)
     }
 
     private fun createPropertiesProcessor() = LambdaPropertiesProcessor(projectManager, awsConnectionsManager) { _, _ ->
@@ -412,14 +374,14 @@ class LambdaPropertiesProcessorTest : BaseTestCase() {
     }
 
     private fun createDefaultProperties(): MutableMap<String, String> =
-            mutableMapOf(
-                    Pair(LambdaConstants.SCRIPT_CONTENT_PARAM, SCRIPT_CONTENT),
-                    Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
-                    Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE),
-                    Pair(LambdaConstants.PROJECT_ID_PARAM, PROJECT_ID),
-                    Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE),
-                    Pair(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, CONNECTION_ID)
-            )
+        mutableMapOf(
+            Pair(LambdaConstants.SCRIPT_CONTENT_PARAM, SCRIPT_CONTENT),
+            Pair(LambdaConstants.MEMORY_SIZE_PARAM, MEMORY_SIZE),
+            Pair(LambdaConstants.IAM_ROLE_PARAM, IAM_ROLE),
+            Pair(LambdaConstants.PROJECT_ID_PARAM, PROJECT_ID),
+            Pair(LambdaConstants.STORAGE_SIZE_PARAM, STORAGE_SIZE),
+            Pair(AwsCloudConnectorConstants.CHOSEN_AWS_CONN_ID_PARAM, CONNECTION_ID)
+        )
 
     companion object {
         const val SECRET_ACCESS_KEY = "secretAccessKey"

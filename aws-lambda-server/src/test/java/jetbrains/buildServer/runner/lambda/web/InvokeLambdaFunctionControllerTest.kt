@@ -1,7 +1,6 @@
 package jetbrains.buildServer.runner.lambda.web
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import jetbrains.buildServer.BuildProblemData
 import jetbrains.buildServer.clouds.amazon.connector.featureDevelopment.AwsConnectionsManager
 import jetbrains.buildServer.controllers.agent.AgentFinder
 import jetbrains.buildServer.runner.lambda.LambdaConstants
@@ -15,76 +14,74 @@ import jetbrains.buildServer.serverSide.SBuildAgent
 import jetbrains.buildServer.serverSide.SRunningBuild
 import jetbrains.buildServer.serverSide.auth.AccessDeniedException
 import org.hamcrest.Matcher
-import org.jmock.AbstractExpectations
-import org.jmock.Expectations
-import org.jmock.States
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.springframework.http.HttpStatus
-import org.testng.annotations.BeforeMethod
+import org.testng.Assert
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
-import java.util.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
+@Listeners(MockitoTestNGListener::class)
 class InvokeLambdaFunctionControllerTest
     : JsonControllerTest<Boolean, InvokeLambdaFunctionController>(InvokeLambdaFunctionController.ALLOWED_METHODS, LambdaConstants.INVOKE_LAMBDA_PATH) {
+    @Mock
     private lateinit var runningBuildsManager: RunningBuildsManager
+
+    @Mock
     private lateinit var awsConnectionsManager: AwsConnectionsManager
+
+    @Mock
     private lateinit var myLambdaFunctionInvokerFactory: LambdaFunctionInvokerFactory
+
+    @Mock
     private lateinit var lambdaFunctionInvoker: LambdaFunctionInvoker
+
+    @Mock
     private lateinit var runningBuild: SRunningBuild
+
+    @Mock
     private lateinit var agentFinder: AgentFinder
+
+    @Mock
     private lateinit var buildAgent: SBuildAgent
+
+    @Mock
     private lateinit var buildPromotion: BuildPromotionEx
 
-    @BeforeMethod
-    @Throws(Exception::class)
-    override fun setUp() {
-        super.setUp()
-        runningBuildsManager = m.mock(RunningBuildsManager::class.java)
-        awsConnectionsManager = m.mock(AwsConnectionsManager::class.java)
-        myLambdaFunctionInvokerFactory = m.mock(LambdaFunctionInvokerFactory::class.java)
-        lambdaFunctionInvoker = m.mock(LambdaFunctionInvoker::class.java)
-        runningBuild = m.mock(SRunningBuild::class.java)
-        agentFinder = m.mock(AgentFinder::class.java)
-        buildAgent = m.mock(SBuildAgent::class.java)
-        buildPromotion = m.mock(BuildPromotionEx::class.java)
-    }
-
     private fun mockGettingDetails() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
-                will(returnValue(objectMapper.writeValueAsString(listOf(RUN_DETAILS))))
-            }
-        })
+        doReturn(objectMapper.writeValueAsString(listOf(RUN_DETAILS)))
+            .`when`(request).getParameter(LambdaConstants.RUN_DETAILS)
     }
 
     private fun mockGettingBuildId() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(request).getParameter(LambdaConstants.BUILD_ID)
-                will(returnValue(BUILD_ID))
-            }
-        })
+        doReturn(BUILD_ID)
+            .`when`(request).getParameter(LambdaConstants.BUILD_ID)
+    }
+
+    private fun verifyInvokingLambdaFunction() {
+        Mockito.verify(lambdaFunctionInvoker)
+            .invokeLambdaFunction(listOf(RUN_DETAILS))
     }
 
     private fun mockInvokingLambdaFunction() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
-                will(returnValue(lambdaFunctionInvoker))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RUN_DETAILS))
-            }
-        })
+        whenever(myLambdaFunctionInvokerFactory.getLambdaFunctionInvoker(getDefaultProperties(), project))
+            .thenReturn(lambdaFunctionInvoker)
+    }
+
+    private fun verifyStoringBuildPromotionAttribute() {
+        Mockito.verify(buildPromotion).setAttribute(LambdaConstants.NUM_INVOCATIONS_PARAM, 1)
+        Mockito.verify(buildPromotion).persist()
     }
 
     private fun mockStoringBuildPromotionAttribute() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(runningBuild).buildPromotion
-                will(returnValue(buildPromotion))
-                oneOf(buildPromotion).setAttribute(LambdaConstants.NUM_INVOCATIONS_PARAM, 1)
-                oneOf(buildPromotion).persist()
-            }
-        })
+        whenever(runningBuild.buildPromotion)
+            .thenReturn(buildPromotion)
     }
 
     override fun testControllerHandle() {
@@ -96,42 +93,42 @@ class InvokeLambdaFunctionControllerTest
         mockStoringBuildPromotionAttribute()
     }
 
+    override fun verifyControllerHandle() {
+        verifyWriteJson()
+        verifyInvokingLambdaFunction()
+        verifyStoringBuildPromotionAttribute()
+    }
+
     override fun getDefaultProperties(): Map<String, String> = emptyMap()
 
     @Test
     override fun testCheckPermissions() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(agentFinder).findAgent(request)
-                will(returnValue(buildAgent))
-            }
-        })
+        whenever(agentFinder.findAgent(request))
+            .thenReturn(buildAgent)
 
         createController().checkPermissions(securityContext, request)
     }
 
     @Test(expectedExceptions = [AccessDeniedException::class])
     override fun testCheckPermissions_Failed() {
-        m.checking(object : Expectations() {
-            init {
-                oneOf(agentFinder).findAgent(request)
-                will(returnValue(null))
-                oneOf(securityContext).authorityHolder
-                will(returnValue(null))
-            }
-        })
+        whenever(agentFinder.findAgent(request))
+            .thenReturn(null)
+        whenever(securityContext.authorityHolder)
+            .thenReturn(null)
+
         createController().checkPermissions(securityContext, request)
     }
 
     override fun createController() = InvokeLambdaFunctionController(
-            descriptor,
-            controllerManager,
-            projectManager,
-            accessManager,
-            authorizationInterceptor,
-            runningBuildsManager,
-            myLambdaFunctionInvokerFactory,
-            agentFinder)
+        descriptor,
+        controllerManager,
+        projectManager,
+        accessManager,
+        authorizationInterceptor,
+        runningBuildsManager,
+        myLambdaFunctionInvokerFactory,
+        agentFinder
+    )
 
     @Test
     fun testHandle_NoRunDetails() {
@@ -141,14 +138,11 @@ class InvokeLambdaFunctionControllerTest
         mockFindingProject()
         mockPropertiesBean(getDefaultProperties())
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
-                will(returnValue(null))
-            }
-        })
-        mockJsonError(HttpStatus.BAD_REQUEST)
+        doReturn(null)
+            .`when`(request).getParameter(LambdaConstants.RUN_DETAILS)
+        mockWriteJson()
         createController().handle(request, response)
+        verifyJsonError(HttpStatus.BAD_REQUEST)
     }
 
     @Test
@@ -160,14 +154,11 @@ class InvokeLambdaFunctionControllerTest
         mockPropertiesBean(getDefaultProperties())
         mockGettingDetails()
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(request).getParameter(LambdaConstants.BUILD_ID)
-                will(returnValue(null))
-            }
-        })
-        mockJsonError(HttpStatus.BAD_REQUEST)
+        doReturn(null)
+            .`when`(request).getParameter(LambdaConstants.BUILD_ID)
+        mockWriteJson()
         createController().handle(request, response)
+        verifyJsonError(HttpStatus.BAD_REQUEST)
     }
 
     @Test
@@ -180,15 +171,12 @@ class InvokeLambdaFunctionControllerTest
         mockGettingBuildId()
         mockGettingDetails()
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(runningBuildsManager).findRunningBuildById(BUILD_ID.toLong())
-                will(returnValue(null))
-            }
-        })
+        whenever(runningBuildsManager.findRunningBuildById(BUILD_ID.toLong()))
+            .thenReturn(null)
 
-        mockJsonError(HttpStatus.BAD_REQUEST)
+        mockWriteJson()
         createController().handle(request, response)
+        verifyJsonError(HttpStatus.BAD_REQUEST)
     }
 
     @Test
@@ -201,17 +189,14 @@ class InvokeLambdaFunctionControllerTest
         mockGettingBuildId()
         mockFindRunningBuild()
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(request).getParameter(LambdaConstants.RUN_DETAILS)
-                will(returnValue(BUILD_ID))
-            }
-        })
+        doReturn(BUILD_ID).`when`(request).getParameter(LambdaConstants.RUN_DETAILS)
 
-        val stopping = mockStopBuild()
-        mockJsonError(HttpStatus.BAD_REQUEST)
+        mockWriteJson()
+        val latch = mockStopBuild()
         createController().handle(request, response)
-        awaitMockBuild(stopping)
+        awaitMockBuild(latch)
+        verifyJsonError(HttpStatus.BAD_REQUEST)
+        verifyStopBuild()
     }
 
     @Test
@@ -226,72 +211,61 @@ class InvokeLambdaFunctionControllerTest
         mockFindRunningBuild()
         mockStoringBuildPromotionAttribute()
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(myLambdaFunctionInvokerFactory).getLambdaFunctionInvoker(getDefaultProperties(), project)
-                will(returnValue(lambdaFunctionInvoker))
-                oneOf(lambdaFunctionInvoker).invokeLambdaFunction(listOf(RUN_DETAILS))
-                will(throwException(Exception("mock error")))
-            }
-        })
+        whenever(myLambdaFunctionInvokerFactory.getLambdaFunctionInvoker(getDefaultProperties(), project))
+            .thenReturn(lambdaFunctionInvoker)
+        whenever(lambdaFunctionInvoker.invokeLambdaFunction(listOf(RUN_DETAILS)))
+            .thenThrow(Exception("mock error"))
 
-        val stopping = mockStopBuild()
-        mockJsonError(HttpStatus.INTERNAL_SERVER_ERROR)
+        mockWriteJson()
+        val latch = mockStopBuild()
         createController().handle(request, response)
-        awaitMockBuild(stopping)
+        awaitMockBuild(latch)
+        verifyJsonError(HttpStatus.INTERNAL_SERVER_ERROR)
+        verifyStoringBuildPromotionAttribute()
+        verifyStopBuild()
     }
 
-    private fun awaitMockBuild(stopping: States) {
-        synchroniser.waitUntil(stopping.`is`("finished"))
+
+    private fun awaitMockBuild(latch: CountDownLatch) {
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS))
     }
 
     private fun mockFindRunningBuild() {
-        m.checking(object : Expectations() {
-            init {
-                allowing(runningBuildsManager).findRunningBuildById(BUILD_ID.toLong())
-                will(returnValue(runningBuild))
-            }
-        })
+        whenever(runningBuildsManager.findRunningBuildById(BUILD_ID.toLong()))
+            .thenReturn(runningBuild)
     }
 
-    private fun mockStopBuild(): States {
-        val stopping = m.states("stopping")
-        m.checking(object : Expectations() {
-            init {
-                oneOf(runningBuild).addBuildProblem(BuildProblemData.createBuildProblem(
-                        JsonControllerException::class.java.simpleName,
-                        LambdaConstants.LAMBDA_INVOCATION_ERROR,
-                        nonNullWithString(aNonNull(String::class.java))))
-                oneOf(runningBuild).isDetachedFromAgent
-                will(returnValue(true))
-
-                oneOf(runningBuild).finish(with(any(Date::class.java)))
-                then(stopping.`is`("finished"))
-            }
-        })
-        return stopping
+    private fun verifyStopBuild() {
+        Mockito.verify(runningBuild).addBuildProblem(any())
     }
 
-    fun AbstractExpectations.nonNullWithString(matcher: Matcher<String>): String {
-        with(matcher)
-        return ""
+    private fun mockStopBuild(): CountDownLatch {
+        val latch = CountDownLatch(1)
+        whenever(runningBuild.isDetachedFromAgent)
+            .thenReturn(true)
+        whenever(runningBuild.finish(any()))
+            .thenAnswer {
+                latch.countDown()
+            }
+
+        return latch
     }
 
     companion object {
         val objectMapper = jacksonObjectMapper()
         const val BUILD_ID = "12345"
         val RUN_DETAILS = RunDetails(
-                "username",
-                "password",
-                "serverUrl",
-                "filename",
-                "directoryId",
-                0,
-                BuildDetails(
-                        BUILD_ID,
-                        "buildTypeId",
-                        "agentName"
-                )
+            "username",
+            "password",
+            "serverUrl",
+            "filename",
+            "directoryId",
+            0,
+            BuildDetails(
+                BUILD_ID,
+                "buildTypeId",
+                "agentName"
+            )
         )
     }
 }

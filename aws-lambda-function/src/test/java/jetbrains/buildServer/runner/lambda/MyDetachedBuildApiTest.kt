@@ -12,49 +12,34 @@ import jetbrains.buildServer.runner.lambda.build.ProcessFailedException
 import jetbrains.buildServer.runner.lambda.model.BuildDetails
 import jetbrains.buildServer.runner.lambda.model.RunDetails
 import kotlinx.coroutines.runBlocking
-import org.jmock.Expectations
-import org.jmock.Mockery
-import org.jmock.lib.concurrent.Synchroniser
-import org.jmock.lib.legacy.ClassImposteriser
+import org.mockito.Mock
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.testng.Assert
-import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
 
+@Listeners(MockitoTestNGListener::class)
 class MyDetachedBuildApiTest : BaseTestCase() {
-    private lateinit var m: Mockery
+    @Mock
     private lateinit var runDetails: RunDetails
+
+    @Mock
     private lateinit var context: Context
+
+    @Mock
     private lateinit var engine: HttpClientEngine
+
+    @Mock
     private lateinit var logger: LambdaLogger
 
     @BeforeMethod
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
-        m = Mockery()
-        m.setImposteriser(ClassImposteriser.INSTANCE)
-        m.setThreadingPolicy(Synchroniser())
         runDetails = RunDetails(USERNAME, PASSWORD, TEAMCITY_URl, SCRIPT_CONTENT, DIRECTORY_ID, INVOCATION_ID, BuildDetails(BUILD_ID, BUILD_TYPE_ID, AGENT_NAME))
-        context = m.mock(Context::class.java)
-        logger = m.mock(LambdaLogger::class.java)
-
-        m.checking(object : Expectations() {
-            init {
-                allowing(context).logger
-                will(returnValue(logger))
-                allowing(logger).log(with(any(String::class.java)))
-                allowing(logger).log(with(any(ByteArray::class.java)))
-            }
-        })
-    }
-
-
-    @AfterMethod
-    @Throws(Exception::class)
-    public override fun tearDown() {
-        m.assertIsSatisfied()
-        super.tearDown()
+        whenever(context.logger).thenReturn(logger)
     }
 
     @Test

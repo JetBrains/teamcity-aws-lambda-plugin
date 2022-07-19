@@ -1,30 +1,39 @@
 package jetbrains.buildServer.runner.lambda.function
 
-import MockLoggerObject.mockBuildLogger
 import com.amazonaws.services.lambda.AWSLambda
 import com.amazonaws.services.lambda.model.InvocationType
 import com.amazonaws.services.lambda.model.InvokeRequest
 import com.fasterxml.jackson.databind.ObjectMapper
 import jetbrains.buildServer.BaseTestCase
 import jetbrains.buildServer.runner.lambda.LambdaConstants.FUNCTION_NAME
-import jetbrains.buildServer.runner.lambda.model.RunDetails
 import jetbrains.buildServer.runner.lambda.directory.Logger
 import jetbrains.buildServer.runner.lambda.model.BuildDetails
-import org.jmock.Expectations
-import org.jmock.Mockery
-import org.jmock.lib.concurrent.Synchroniser
-import org.jmock.lib.legacy.ClassImposteriser
+import jetbrains.buildServer.runner.lambda.model.RunDetails
 import org.junit.Assert
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.kotlin.whenever
+import org.mockito.testng.MockitoTestNGListener
 import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Listeners
 import org.testng.annotations.Test
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Listeners(MockitoTestNGListener::class)
 class LocalLambdaFunctionInvokerTest : BaseTestCase() {
-    private lateinit var m: Mockery
+    @Mock
     private lateinit var logger: Logger
+
+    @Mock
     private lateinit var objectMapper: ObjectMapper
+
+    @Mock
     private lateinit var awsLambda: AWSLambda
+
+    @Mock
     private lateinit var lambdaFunctionResolverFactory: LambdaFunctionResolverFactory
+
+    @Mock
     private lateinit var lambdaFunctionResolver: LambdaFunctionResolver
 
 
@@ -32,69 +41,42 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
     @Throws(Exception::class)
     public override fun setUp() {
         super.setUp()
-        m = Mockery()
-        m.setImposteriser(ClassImposteriser.INSTANCE)
-        m.setThreadingPolicy(Synchroniser())
-        logger = m.mockBuildLogger()
-        objectMapper = m.mock(ObjectMapper::class.java)
-        awsLambda = m.mock(AWSLambda::class.java)
-        lambdaFunctionResolverFactory = m.mock(LambdaFunctionResolverFactory::class.java)
-        lambdaFunctionResolver = m.mock(LambdaFunctionResolver::class.java)
 
-
-        m.checking(object : Expectations() {
-            init {
-                oneOf(lambdaFunctionResolverFactory).getLambdaFunctionResolver()
-                will(returnValue(lambdaFunctionResolver))
-                oneOf(lambdaFunctionResolver).resolveFunction()
-                will(returnValue(FUNCTION_NAME))
-
-                allowing(objectMapper).writeValueAsString(RUN_DETAILS)
-                will(returnValue(OBJECT_STRING))
-
-            }
-        })
+        whenever(lambdaFunctionResolverFactory.getLambdaFunctionResolver())
+            .thenReturn(lambdaFunctionResolver)
+        whenever(lambdaFunctionResolver.resolveFunction())
+            .thenReturn(FUNCTION_NAME)
+        whenever(objectMapper.writeValueAsString(RUN_DETAILS))
+            .thenReturn(OBJECT_STRING)
     }
 
     @Test
     fun testInvokeLambdaFunction() {
         val invoker = createClient(AtomicBoolean())
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(awsLambda).invoke(
-                        InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
-                                .withPayload(
-                                        OBJECT_STRING
-                                )
-                )
-            }
-        })
 
         val error = invoker.invokeLambdaFunction(listOf(RUN_DETAILS))
         Assert.assertFalse(error)
+        Mockito.verify(
+            awsLambda
+        ).invoke(
+            InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
+                .withPayload(
+                    OBJECT_STRING
+                )
+        )
     }
 
     @Test
     fun testInvokeLambdaFunction_InterruptedBuild() {
         val invoker = createClient(AtomicBoolean(true))
 
-        m.checking(object : Expectations() {
-            init {
-                oneOf(awsLambda).invoke(
-                        InvokeRequest().withInvocationType(InvocationType.Event).withFunctionName(FUNCTION_NAME)
-                                .withPayload(
-                                        OBJECT_STRING
-                                )
-                )
-            }
-        })
-
-        val error = invoker.invokeLambdaFunction(listOf( RUN_DETAILS))
+        val error = invoker.invokeLambdaFunction(listOf(RUN_DETAILS))
         Assert.assertTrue(error)
     }
 
-    private fun createClient(atomicBoolean: AtomicBoolean): LocalLambdaFunctionInvoker = LocalLambdaFunctionInvoker(logger, objectMapper, atomicBoolean, awsLambda, lambdaFunctionResolverFactory)
+    private fun createClient(atomicBoolean: AtomicBoolean): LocalLambdaFunctionInvoker =
+        LocalLambdaFunctionInvoker(logger, objectMapper, atomicBoolean, awsLambda, lambdaFunctionResolverFactory)
 
     companion object {
         private const val OBJECT_STRING = "objectString"
@@ -108,17 +90,17 @@ class LocalLambdaFunctionInvokerTest : BaseTestCase() {
         private const val BUILD_TYPE_ID = "buildTypeId"
         private const val AGENT_NAME = "agentName"
         private val RUN_DETAILS = RunDetails(
-                USERNAME,
-                PASSWORD,
-                URL,
-                CUSTOM_SCRIPT_FILENAME,
-                DIRECTORY_ID,
-                RUN_NUMBER,
-                BuildDetails(
-                    BUILD_ID,
-                    BUILD_TYPE_ID,
-                    AGENT_NAME
-                )
+            USERNAME,
+            PASSWORD,
+            URL,
+            CUSTOM_SCRIPT_FILENAME,
+            DIRECTORY_ID,
+            RUN_NUMBER,
+            BuildDetails(
+                BUILD_ID,
+                BUILD_TYPE_ID,
+                AGENT_NAME
+            )
         )
     }
 }
