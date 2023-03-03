@@ -1,4 +1,4 @@
-# TeamCity AWS Lambda plugin [![official JetBrains project](https://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
+# TeamCity AWS Lambda plugin [![JetBrains incubator project](https://jb.gg/badges/incubator-flat-square.svg)](https://github.com/JetBrains#jetbrains-on-github)
 
 Teamcity plugin which allows running build agents on AWS Lambda.
 
