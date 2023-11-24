@@ -15,11 +15,13 @@ ext {
   teamcityDir = hasProperty('teamcity.dir') ? property('teamcity.dir') : "$rootDir/teamcity/servers/TeamCity-${teamcityVersion}"
   teamcityDataDir = "$rootDir/teamcity/data/" + teamcityVersion
   teamcityJavaHome = System.properties['java.home']
-  amazonUtilVersion = 'release-99472-133-g49044ab'
+  amazonUtilVersion = teamcityVersion
   kotlin_version = '1.6.10'
   mavenRepositoryUser = findProperty('maven.repository.user')
   mavenRepositoryPassword = findProperty('maven.repository.password')
   ktor_version = '2.0.0'
+  localRepo = findProperty('TC_LOCAL_REPO')
+  localAwsRepo = findProperty('TC_LOCAL_AWS_REPO')
 }
 
 
@@ -55,6 +57,18 @@ configure(subprojects) {
     mavenCentral()
     maven {
       url = 'https://repository.jetbrains.com/all'
+    }
+    if (localRepo) {
+      maven {
+        name = "local-teamcity-artifacts"
+        url "file:///${project.getRootDir()}/${localRepo}"
+      }
+    }
+    if (localAwsRepo) {
+      maven {
+        name = "local-teamcity-artifacts"
+        url "file:///${project.getRootDir()}/${localAwsRepo}"
+      }
     }
     maven {
       url = 'https://packages.jetbrains.team/maven/p/tc/maven'
