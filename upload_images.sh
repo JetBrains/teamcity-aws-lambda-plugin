@@ -33,7 +33,7 @@ upload_images(){
   fi
 
   set -e
-  ./gradlew :aws-lambda-function:assemble
+  ./gradlew :aws-lambda-function:build
 
   docker build -t $docker_tag -f "images/build/Dockerfile-$image_name" .
 
