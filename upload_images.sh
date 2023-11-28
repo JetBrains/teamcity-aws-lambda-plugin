@@ -17,12 +17,13 @@ create_repo(){
 upload_images(){
   region=$1
   image_name=$2
+  version_tag=$3
   ./generate_images.sh
 
   account_id=$(aws sts get-caller-identity --query "Account" --output text)
   ecr_repo_prefix="$account_id.dkr.ecr.$region.amazonaws.com"
   repository_name="teamcity-lambda-runner-$image_name"
-  docker_tag="$ecr_repo_prefix/$repository_name"
+  docker_tag="$ecr_repo_prefix/$repository_name:$version_tag"
 
   aws ecr get-login-password --region $region | docker login --username AWS --password-stdin 913206223978.dkr.ecr.eu-west-1.amazonaws.com
 
@@ -32,7 +33,7 @@ upload_images(){
   fi
 
   set -e
-  ./gradlew :aws-lambda-function:build
+  ./gradlew :aws-lambda-function:assemble
 
   docker build -t $docker_tag -f "images/build/Dockerfile-$image_name" .
 
