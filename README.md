@@ -1,3 +1,10 @@
+# Deprecated
+
+This repository has moved to
+https://github.com/JetBrains/TeamCity/tree/master/plugins/cloud/aws-lambda.
+
+Please use the new location for current sources and updates.
+
 # TeamCity AWS Lambda plugin [![JetBrains incubator project](https://jb.gg/badges/incubator-flat-square.svg)](https://github.com/JetBrains#jetbrains-on-github)
 
 Teamcity plugin which allows running build agents on AWS Lambda.
